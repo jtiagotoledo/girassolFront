@@ -19,22 +19,35 @@ const CadastroAluno = () => {
     nome: '',
     cpf: '',
     data_nasc: '',
-    endereco: '',
     email: '',
     celular: '',
+    // Novos campos de endereço
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
     lim_aulas: '8',
   });
 
   const salvar = async () => {
-    if (!form.nome || form.cpf.length < 14 || form.celular.length < 14) {
-      Alert.alert("Atenção", "Preencha Nome, CPF e Celular corretamente.");
+    // Validação mínima: Nome e CPF
+    if (!form.nome || form.cpf.length < 14) {
+      Alert.alert("Atenção", "Preencha ao menos o Nome e o CPF corretamente.");
       return;
     }
 
     try {
       await cadastrarAluno(form);
       Alert.alert("Sucesso!", "Aluno cadastrado com sucesso.");
-      setForm({ nome: '', cpf: '', data_nasc: '', endereco: '', email: '', celular: '', lim_aulas: '8' });
+      // Reseta todo o formulário
+      setForm({ 
+        nome: '', cpf: '', data_nasc: '', email: '', celular: '',
+        cep: '', logradouro: '', numero: '', complemento: '', 
+        bairro: '', cidade: '', uf: '', lim_aulas: '8' 
+      });
     } catch (error) {
       if (error.message.includes("UNIQUE constraint failed")) {
         Alert.alert("Erro", "Este CPF já está cadastrado.");
@@ -95,40 +108,118 @@ const CadastroAluno = () => {
           </View>
         </View>
 
-        {/* Card Contato */}
+        {/* Card Contato e Endereço */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Contato e Localização</Text>
 
-          <Text style={styles.label}>CELULAR / WHATSAPP</Text>
-          <TextInputMask
-            type={'cel-phone'}
-            options={{ maskType: 'BRL', withDDD: true, dddMask: '(99) ' }}
-            style={styles.input}
-            value={form.celular}
-            placeholder="(00) 00000-0000"
-            placeholderTextColor="#999"
-            onChangeText={(val) => setForm({...form, celular: val})}
-          />
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={styles.label}>CELULAR / WHATSAPP</Text>
+              <TextInputMask
+                type={'cel-phone'}
+                options={{ maskType: 'BRL', withDDD: true, dddMask: '(99) ' }}
+                style={styles.input}
+                value={form.celular}
+                placeholder="(00) 00000-0000"
+                placeholderTextColor="#999"
+                onChangeText={(val) => setForm({...form, celular: val})}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>E-MAIL</Text>
+              <TextInput 
+                style={styles.input} 
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="aluno@email.com"
+                placeholderTextColor="#999"
+                value={form.email}
+                onChangeText={(val) => setForm({...form, email: val})} 
+              />
+            </View>
+          </View>
 
-          <Text style={styles.label}>E-MAIL</Text>
+          {/* Linha: CEP e UF */}
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={styles.label}>CEP</Text>
+              <TextInputMask
+                type={'zip-code'}
+                style={styles.input}
+                value={form.cep}
+                placeholder="00000-000"
+                placeholderTextColor="#999"
+                onChangeText={(val) => setForm({...form, cep: val})}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>UF (ESTADO)</Text>
+              <TextInput 
+                style={[styles.input, { textTransform: 'uppercase' }]} 
+                placeholder="Ex: SP"
+                placeholderTextColor="#999"
+                maxLength={2}
+                value={form.uf}
+                onChangeText={(val) => setForm({...form, uf: val})} 
+              />
+            </View>
+          </View>
+
+          {/* Linha: Logradouro e Número */}
+          <View style={styles.row}>
+            <View style={{ flex: 3, marginRight: 10 }}>
+              <Text style={styles.label}>NOME DO LOGRADOURO (RUA/AV)</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Rua..."
+                placeholderTextColor="#999"
+                value={form.logradouro}
+                onChangeText={(val) => setForm({...form, logradouro: val})} 
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>NÚMERO</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="123 ou S/N"
+                placeholderTextColor="#999"
+                value={form.numero}
+                onChangeText={(val) => setForm({...form, numero: val})} 
+              />
+            </View>
+          </View>
+
+          <Text style={styles.label}>COMPLEMENTO (OPCIONAL)</Text>
           <TextInput 
             style={styles.input} 
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="aluno@email.com"
+            placeholder="Apto, Bloco, Casa 2..."
             placeholderTextColor="#999"
-            value={form.email}
-            onChangeText={(val) => setForm({...form, email: val})} 
+            value={form.complemento}
+            onChangeText={(val) => setForm({...form, complemento: val})} 
           />
 
-          <Text style={styles.label}>ENDEREÇO</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Rua, número e bairro"
-            placeholderTextColor="#999"
-            value={form.endereco}
-            onChangeText={(val) => setForm({...form, endereco: val})} 
-          />
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={styles.label}>BAIRRO</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Bairro"
+                placeholderTextColor="#999"
+                value={form.bairro}
+                onChangeText={(val) => setForm({...form, bairro: val})} 
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>LOCALIDADE (CIDADE)</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Cidade"
+                placeholderTextColor="#999"
+                value={form.cidade}
+                onChangeText={(val) => setForm({...form, cidade: val})} 
+              />
+            </View>
+          </View>
         </View>
 
         {/* Card Plano */}
@@ -158,7 +249,7 @@ const CadastroAluno = () => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#F5F5F5' // Fundo cinza suave
+    backgroundColor: '#F5F5F5' 
   },
   contentContainer: { 
     padding: 20,
@@ -176,10 +267,9 @@ const styles = StyleSheet.create({
     padding: 20, 
     borderRadius: 12, 
     marginBottom: 20,
-    // Removidas bordas e sombras que causavam artefatos
   },
   sectionTitle: {
-    color: Colors.primary, // Dourado
+    color: Colors.primary, 
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 15,
@@ -195,14 +285,13 @@ const styles = StyleSheet.create({
     fontWeight: '700' 
   },
   input: { 
-    backgroundColor: '#F9F9F9', // Fundo levemente cinza no input
+    backgroundColor: '#F9F9F9', 
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 8, 
-    fontSize: 16, 
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10, 
+    fontSize: 15, 
     marginBottom: 15, 
     color: '#000',
-    // Sem bordas (borderWidth: 0) para evitar o erro visual da imagem
   },
   row: { 
     flexDirection: 'row', 
