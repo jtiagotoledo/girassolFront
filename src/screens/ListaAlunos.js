@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
-// IMPORT CORRIGIDO: Puxando o 'db' padrão do seu arquivo
 import db from '../database/Database'; 
 
 const ListaAlunos = ({ navigation }) => {
   const [alunos, setAlunos] = useState([]);
 
-  // Função reescrita no padrão Callback (igual ao seu Cadastro)
   const carregarAlunos = () => {
     db.transaction((tx) => {
       tx.executeSql(
         'SELECT * FROM alunos ORDER BY nome ASC',
-        [], // Parâmetros vazios
-        (tx, results) => {
+        [], 
+        (_tx, results) => {
           let tempAlunos = [];
           let len = results.rows.length;
           
@@ -22,14 +20,13 @@ const ListaAlunos = ({ navigation }) => {
           
           setAlunos(tempAlunos);
         },
-        (tx, error) => {
+        (_tx, error) => {
           console.error("Erro ao listar alunos:", error);
         }
       );
     });
   };
 
-  // Carrega sempre que a tela ganha foco
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       carregarAlunos();

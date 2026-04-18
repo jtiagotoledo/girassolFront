@@ -5,19 +5,12 @@ import Colors from '../style/Colors';
 const Checkin = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      {/* O Ícone Discreto para Gestão */}
-      <TouchableOpacity 
-        style={styles.adminButton} 
-        onPress={() => navigation.navigate('ListaAlunos')} // Ou Cadastro
-      >
-        <Text style={{ fontSize: 20 }}>⚙️</Text>
-      </TouchableOpacity>
+     
 
       <View style={styles.content}>
         <Text style={styles.title}>Bem-vindo ao Girassol Pilates</Text>
         <Text style={styles.subtitle}>Digite seu CPF para o check-in</Text>
         
-        {/* Aqui virá o campo de CPF e o botão de Check-in que faremos a seguir */}
       </View>
     </View>
   );

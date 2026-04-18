@@ -1,7 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { NavigationContainer, useNavigation } from '@react-navigation/native'; // Importamos o useNavigation
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Feather';
+
+import Colors from '../style/Colors'; 
 
 import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
@@ -9,17 +12,15 @@ import CadastroAluno from '../screens/CadastroAluno';
 
 const Drawer = createDrawerNavigator();
 
-// --- 1. COMPONENTE 100% INDEPENDENTE ---
-// Ele usa o próprio hook para saber quem é a navegação, sem depender de "props" do pai
 const MenuButton = () => {
-  const navigation = useNavigation(); // O segredo está aqui!
+  const navigation = useNavigation();
 
   return (
     <TouchableOpacity 
       onPress={() => navigation.toggleDrawer()}
       style={styles.menuButton}
     >
-      <Text style={styles.menuText}>MENU</Text>
+      <Icon name="menu" size={30} color={Colors.secondary} />
     </TouchableOpacity>
   );
 };
@@ -29,19 +30,22 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Drawer.Navigator 
         initialRouteName="Checkin"
-        // --- 2. SEM FUNÇÕES DE SETA (ARROW FUNCTIONS) ---
-        // Passamos as opções como um objeto fixo, não como uma função
         screenOptions={{
           drawerStyle: {
-            backgroundColor: '#fff',
+            backgroundColor: Colors.surface, 
             width: 240,
           },
           headerShown: true, 
           headerTitle: 'Girassol Pilates',
-          drawerActiveTintColor: '#28a745',
+          headerTintColor: Colors.secondary,
+          headerStyle: {
+            backgroundColor: Colors.surface,
+          },
           
-          // --- 3. PASSAGEM POR REFERÊNCIA DIRETA ---
-          // Sem "() =>". Apenas o nome do componente!
+          drawerActiveTintColor: Colors.secondary, 
+          drawerActiveBackgroundColor: Colors.primary, 
+          drawerInactiveTintColor: Colors.textLight, 
+          
           headerLeft: MenuButton, 
         }}
       >
@@ -69,11 +73,6 @@ const styles = StyleSheet.create({
   menuButton: {
     marginLeft: 15,
     padding: 10,
-  },
-  menuText: {
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#28a745'
   }
 });
 
