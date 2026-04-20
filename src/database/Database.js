@@ -7,8 +7,13 @@ const db = SQLite.openDatabase(
 );
 
 export const setupDatabase = () => {
+  // 1. LIGAR AS CHAVES ESTRANGEIRAS (Precisa rodar fora da transaction normal)
+  db.executeSql('PRAGMA foreign_keys = ON;', [], () => {
+    console.log('Chaves Estrangeiras (Cascade) ATIVADAS!');
+  });
+
   db.transaction((tx) => {
-    // 1. Tabela de Alunos
+    // Tabela de Alunos (Pai)
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS alunos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,24 +34,24 @@ export const setupDatabase = () => {
       );`
     );
 
-    // 2. Tabela de Check-ins
+    // Tabela de Check-ins (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS checkins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         aluno_id INTEGER,
         data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (aluno_id) REFERENCES alunos (id)
+        FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );`
     );
 
-    // 3. NOVA: Tabela de Histórico de Pagamentos
+    // Tabela de Pagamentos (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS pagamentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         aluno_id INTEGER,
         data_pagamento TEXT NOT NULL,
         valor REAL, 
-        FOREIGN KEY (aluno_id) REFERENCES alunos (id)
+        FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );`
     );
   });
@@ -59,45 +64,15 @@ export const cadastrarAluno = (aluno) => {
     db.transaction((tx) => {
       tx.executeSql(
         `INSERT INTO alunos (
-          nome, 
-          cpf, 
-          data_nasc, 
-          email, 
-          celular, 
-          logradouro, 
-          numero, 
-          complemento, 
-          bairro, 
-          cidade, 
-          uf, 
-          cep, 
-          lim_aulas,
-          ativo
+          nome, cpf, data_nasc, email, celular, logradouro, numero, complemento, bairro, cidade, uf, cep, lim_aulas, ativo
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
         [
-          aluno.nome,
-          aluno.cpf,
-          aluno.data_nasc,
-          aluno.email,
-          aluno.celular,
-          aluno.logradouro,
-          aluno.numero,
-          aluno.complemento,
-          aluno.bairro,
-          aluno.cidade,
-          aluno.uf,
-          aluno.cep,
-          aluno.lim_aulas,
-          aluno.ativo !== undefined ? aluno.ativo : 1 
+          aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
+          aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
+          aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
         ],
-        (_, results) => {
-          console.log("Resultado do Insert:", results);
-          resolve(results);
-        },
-        (_, error) => {
-          console.error("Erro no SQL:", error);
-          reject(error);
-        }
+        (_, results) => { resolve(results); },
+        (_, error) => { reject(error); }
       );
     });
   });
@@ -108,54 +83,41 @@ export const atualizarAluno = (id, aluno) => {
     db.transaction((tx) => {
       tx.executeSql(
         `UPDATE alunos SET 
-          nome = ?, cpf = ?, data_nasc = ?, email = ?, celular = ?, 
-          logradouro = ?, numero = ?, complemento = ?, bairro = ?, 
-          cidade = ?, uf = ?, cep = ?, lim_aulas = ?, ativo = ? 
+          nome = ?, cpf = ?, data_nasc = ?, email = ?, celular = ?, logradouro = ?, numero = ?, 
+          complemento = ?, bairro = ?, cidade = ?, uf = ?, cep = ?, lim_aulas = ?, ativo = ? 
          WHERE id = ?`,
         [
-          aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular,
-          aluno.logradouro, aluno.numero, aluno.complemento, aluno.bairro,
-          aluno.cidade, aluno.uf, aluno.cep, aluno.lim_aulas, 
-          aluno.ativo, 
-          id 
+          aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
+          aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
+          aluno.lim_aulas, aluno.ativo, id 
         ],
-        (_, results) => {
-          console.log("Resultado do Update:", results);
-          resolve(results);
-        },
-        (_, error) => {
-          console.error("Erro no Update SQL:", error);
-          reject(error);
-        }
+        (_, results) => { resolve(results); },
+        (_, error) => { reject(error); }
       );
     });
   });
 };
 
+// 2. FUNÇÃO DE DELETAR LIMPA (O Banco faz o resto)
 export const deletarAluno = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
-      // Dica de segurança futura: Em bancos relacionais, ao deletar o aluno, 
-      // idealmente deletamos também os pagamentos e checkins dele. 
-      // O SQLite faz isso automaticamente se "PRAGMA foreign_keys = ON" estiver ativado.
+      // Basta deletar o aluno. O 'ON DELETE CASCADE' vai apagar os checkins e pagamentos dele sozinho!
       tx.executeSql(
         'DELETE FROM alunos WHERE id = ?',
         [id],
         (_, results) => {
-          console.log("Aluno deletado com sucesso");
+          console.log("Aluno e todo o seu histórico deletados com sucesso via CASCADE.");
           resolve(results);
         },
-        (_, error) => {
-          console.error("Erro ao deletar aluno:", error);
-          reject(error);
-        }
+        (_, error) => { reject(error); }
       );
     });
   });
 };
 
 // ==========================================
-// --- NOVAS FUNÇÕES FINANCEIRAS ---
+// --- FUNÇÕES FINANCEIRAS ---
 // ==========================================
 
 export const registrarPagamento = (aluno_id, data_pagamento, valor = 0) => {
@@ -164,14 +126,8 @@ export const registrarPagamento = (aluno_id, data_pagamento, valor = 0) => {
       tx.executeSql(
         'INSERT INTO pagamentos (aluno_id, data_pagamento, valor) VALUES (?, ?, ?)',
         [aluno_id, data_pagamento, valor],
-        (_, results) => {
-          console.log("Pagamento registrado com sucesso");
-          resolve(results);
-        },
-        (_, error) => {
-          console.error("Erro ao registrar pagamento:", error);
-          reject(error);
-        }
+        (_, results) => { resolve(results); },
+        (_, error) => { reject(error); }
       );
     });
   });
@@ -190,10 +146,7 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
           }
           resolve(pagamentos);
         },
-        (_, error) => {
-          console.error("Erro ao buscar histórico financeiro:", error);
-          reject(error);
-        }
+        (_, error) => { reject(error); }
       );
     });
   });
@@ -201,7 +154,6 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
 
 export const registrarCheckin = (aluno_id) => {
   return new Promise((resolve, reject) => {
-    // Pega a data/hora local exata do tablet (Brasil)
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset() * 60000;
     const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' '); 
@@ -210,14 +162,8 @@ export const registrarCheckin = (aluno_id) => {
       tx.executeSql(
         'INSERT INTO checkins (aluno_id, data_hora) VALUES (?, ?)',
         [aluno_id, dataHoraLocal],
-        (_, results) => {
-          console.log("Check-in registrado:", dataHoraLocal);
-          resolve(results);
-        },
-        (_, error) => {
-          console.error("Erro ao registrar check-in:", error);
-          reject(error);
-        }
+        (_, results) => { resolve(results); },
+        (_, error) => { reject(error); }
       );
     });
   });
