@@ -198,3 +198,27 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
     });
   });
 };
+
+export const registrarCheckin = (aluno_id) => {
+  return new Promise((resolve, reject) => {
+    // Pega a data/hora local exata do tablet (Brasil)
+    const hoje = new Date();
+    const offset = hoje.getTimezoneOffset() * 60000;
+    const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' '); 
+
+    db.transaction((tx) => {
+      tx.executeSql(
+        'INSERT INTO checkins (aluno_id, data_hora) VALUES (?, ?)',
+        [aluno_id, dataHoraLocal],
+        (_, results) => {
+          console.log("Check-in registrado:", dataHoraLocal);
+          resolve(results);
+        },
+        (_, error) => {
+          console.error("Erro ao registrar check-in:", error);
+          reject(error);
+        }
+      );
+    });
+  });
+};
