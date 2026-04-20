@@ -87,3 +87,50 @@ export const cadastrarAluno = (aluno) => {
     });
   });
 };
+
+export const atualizarAluno = (id, aluno) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `UPDATE alunos SET 
+          nome = ?, cpf = ?, data_nasc = ?, email = ?, celular = ?, 
+          logradouro = ?, numero = ?, complemento = ?, bairro = ?, 
+          cidade = ?, uf = ?, cep = ?, lim_aulas = ?
+         WHERE id = ?`,
+        [
+          aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular,
+          aluno.logradouro, aluno.numero, aluno.complemento, aluno.bairro,
+          aluno.cidade, aluno.uf, aluno.cep, aluno.lim_aulas, 
+          id 
+        ],
+        (_, results) => {
+          console.log("Resultado do Update:", results);
+          resolve(results);
+        },
+        (_, error) => {
+          console.error("Erro no Update SQL:", error);
+          reject(error);
+        }
+      );
+    });
+  });
+};
+
+export const deletarAluno = (id) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'DELETE FROM alunos WHERE id = ?',
+        [id],
+        (_, results) => {
+          console.log("Aluno deletado com sucesso");
+          resolve(results);
+        },
+        (_, error) => {
+          console.error("Erro ao deletar aluno:", error);
+          reject(error);
+        }
+      );
+    });
+  });
+};

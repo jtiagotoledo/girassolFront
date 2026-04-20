@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,17 +11,18 @@ import {
   Platform 
 } from 'react-native';
 import { TextInputMask } from 'react-native-masked-text';
-import { cadastrarAluno } from '../database/Database';
+// ATENÇÃO: Lembre-se de exportar a função atualizarAluno no seu arquivo Database.js!
+import { cadastrarAluno, atualizarAluno } from '../database/Database';
 import Colors from '../style/Colors';
 
-const CadastroAluno = () => {
+// 1. Adicionamos route e navigation aqui
+const CadastroAluno = ({ route, navigation }) => {
   const [form, setForm] = useState({
     nome: '',
     cpf: '',
     data_nasc: '',
     email: '',
     celular: '',
-    // Novos campos de endereço
     cep: '',
     logradouro: '',
     numero: '',
@@ -32,23 +33,51 @@ const CadastroAluno = () => {
     lim_aulas: '8',
   });
 
+  // 2. Pegamos os dados do aluno que foi clicado lá na Lista (se existir)
+  const alunoEditavel = route?.params?.alunoEditavel;
+
+  // 3. O useEffect preenche o formulário automaticamente se for uma edição
+  useEffect(() => {
+    if (alunoEditavel) {
+      setForm({
+        nome: alunoEditavel.nome || '',
+        cpf: alunoEditavel.cpf || '',
+        data_nasc: alunoEditavel.data_nasc || '',
+        email: alunoEditavel.email || '',
+        celular: alunoEditavel.celular || '',
+        cep: alunoEditavel.cep || '',
+        logradouro: alunoEditavel.logradouro || '',
+        numero: alunoEditavel.numero || '',
+        complemento: alunoEditavel.complemento || '',
+        bairro: alunoEditavel.bairro || '',
+        cidade: alunoEditavel.cidade || '',
+        uf: alunoEditavel.uf || '',
+        lim_aulas: alunoEditavel.lim_aulas ? String(alunoEditavel.lim_aulas) : '8',
+      });
+    }
+  }, [alunoEditavel]);
+
   const salvar = async () => {
-    // Validação mínima: Nome e CPF
     if (!form.nome || form.cpf.length < 14) {
       Alert.alert("Atenção", "Preencha ao menos o Nome e o CPF corretamente.");
       return;
     }
 
     try {
-      await cadastrarAluno(form);
-      Alert.alert("Sucesso!", "Aluno cadastrado com sucesso.");
-      setForm({ 
-        nome: '', cpf: '', data_nasc: '', email: '', celular: '',
-        cep: '', logradouro: '', numero: '', complemento: '', 
-        bairro: '', cidade: '', uf: '', lim_aulas: '8' 
-      });
+      // 4. Decidimos qual função do banco chamar
+      if (alunoEditavel) {
+        await atualizarAluno(alunoEditavel.id, form);
+        Alert.alert("Sucesso!", "Dados do aluno atualizados.");
+      } else {
+        await cadastrarAluno(form);
+        Alert.alert("Sucesso!", "Aluno cadastrado com sucesso.");
+      }
+      
+      // 5. Após salvar, voltamos para a tela anterior
+      navigation.goBack();
+
     } catch (error) {
-      if (error.message.includes("UNIQUE constraint failed")) {
+      if (error.message && error.message.includes("UNIQUE constraint failed")) {
         Alert.alert("Erro", "Este CPF já está cadastrado.");
       } else {
         Alert.alert("Erro", "Falha ao salvar no banco de dados.");
@@ -65,7 +94,10 @@ const CadastroAluno = () => {
         style={styles.container} 
         contentContainerStyle={styles.contentContainer}
       >
-        <Text style={styles.title}>Novo Aluno</Text>
+        {/* 6. Título dinâmico */}
+        <Text style={styles.title}>
+          {alunoEditavel ? 'Editar Aluno' : 'Novo Aluno'}
+        </Text>
 
         {/* Card Identificação */}
         <View style={styles.card}>
@@ -238,7 +270,10 @@ const CadastroAluno = () => {
           onPress={salvar}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>FINALIZAR CADASTRO</Text>
+          {/* 7. Texto do botão dinâmico */}
+          <Text style={styles.buttonText}>
+            {alunoEditavel ? 'SALVAR ALTERAÇÕES' : 'FINALIZAR CADASTRO'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
