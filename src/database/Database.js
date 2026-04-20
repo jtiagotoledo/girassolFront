@@ -58,8 +58,9 @@ export const cadastrarAluno = (aluno) => {
           cidade, 
           uf, 
           cep, 
-          lim_aulas
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          lim_aulas,
+          ativo -- <-- CAMPO NOVO AQUI
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
         [
           aluno.nome,
           aluno.cpf,
@@ -73,7 +74,8 @@ export const cadastrarAluno = (aluno) => {
           aluno.cidade,
           aluno.uf,
           aluno.cep,
-          aluno.lim_aulas
+          aluno.lim_aulas,
+          aluno.ativo !== undefined ? aluno.ativo : 1 
         ],
         (_, results) => {
           console.log("Resultado do Insert:", results);
@@ -95,12 +97,13 @@ export const atualizarAluno = (id, aluno) => {
         `UPDATE alunos SET 
           nome = ?, cpf = ?, data_nasc = ?, email = ?, celular = ?, 
           logradouro = ?, numero = ?, complemento = ?, bairro = ?, 
-          cidade = ?, uf = ?, cep = ?, lim_aulas = ?
+          cidade = ?, uf = ?, cep = ?, lim_aulas = ?, ativo = ? 
          WHERE id = ?`,
         [
           aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular,
           aluno.logradouro, aluno.numero, aluno.complemento, aluno.bairro,
           aluno.cidade, aluno.uf, aluno.cep, aluno.lim_aulas, 
+          aluno.ativo, 
           id 
         ],
         (_, results) => {
