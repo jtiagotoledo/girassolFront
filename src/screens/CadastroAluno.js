@@ -39,6 +39,7 @@ const CadastroAluno = ({ route, navigation }) => {
   // 3. O useEffect preenche o formulário automaticamente se for uma edição
   useEffect(() => {
     if (alunoEditavel) {
+      // Preenche se for edição
       setForm({
         nome: alunoEditavel.nome || '',
         cpf: alunoEditavel.cpf || '',
@@ -54,6 +55,13 @@ const CadastroAluno = ({ route, navigation }) => {
         uf: alunoEditavel.uf || '',
         lim_aulas: alunoEditavel.lim_aulas ? String(alunoEditavel.lim_aulas) : '8',
       });
+    } else {
+      // ZERA O FORMULÁRIO SE FOR NOVO CADASTRO
+      setForm({
+        nome: '', cpf: '', data_nasc: '', email: '', celular: '',
+        cep: '', logradouro: '', numero: '', complemento: '',
+        bairro: '', cidade: '', uf: '', lim_aulas: '8',
+      });
     }
   }, [alunoEditavel]);
 
@@ -64,7 +72,6 @@ const CadastroAluno = ({ route, navigation }) => {
     }
 
     try {
-      // 4. Decidimos qual função do banco chamar
       if (alunoEditavel) {
         await atualizarAluno(alunoEditavel.id, form);
         Alert.alert("Sucesso!", "Dados do aluno atualizados.");
@@ -73,8 +80,18 @@ const CadastroAluno = ({ route, navigation }) => {
         Alert.alert("Sucesso!", "Aluno cadastrado com sucesso.");
       }
       
-      // 5. Após salvar, voltamos para a tela anterior
-      navigation.goBack();
+      // 1. Limpa o formulário forçadamente na memória após salvar
+      setForm({
+        nome: '', cpf: '', data_nasc: '', email: '', celular: '',
+        cep: '', logradouro: '', numero: '', complemento: '',
+        bairro: '', cidade: '', uf: '', lim_aulas: '8',
+      });
+
+      // 2. Tira os parâmetros de edição da rota atual
+      navigation.setParams({ alunoEditavel: undefined });
+
+      // 3. Força a ida para a tela de Lista de Alunos (em vez de Check-in)
+      navigation.navigate('ListaAlunos');
 
     } catch (error) {
       if (error.message && error.message.includes("UNIQUE constraint failed")) {
@@ -84,7 +101,7 @@ const CadastroAluno = ({ route, navigation }) => {
       }
     }
   };
-
+  
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
