@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard } from
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
+import { verificarEExecutarBackup } from '../services/BackupService';
 
 // --- FUNÇÕES AUXILIARES ---
 const verificarVencimento = (dataISO) => {
@@ -73,6 +74,7 @@ const Checkin = ({ navigation }) => {
             // SUCESSO: Passou em tudo!
             try {
               await registrarCheckin(aluno.id);
+              verificarEExecutarBackup();
               setStatusCheckin('sucesso');
               setMensagemFeedback({
                 titulo: `Bem-vindo(a), ${aluno.nome.split(' ')[0]}!`, // Pega só o primeiro nome

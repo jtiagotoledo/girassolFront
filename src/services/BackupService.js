@@ -15,7 +15,7 @@ const realizarBackupDrive = async () => {
 };
 
 // 2. A FUNÇÃO DE VERIFICAÇÃO DE 7 DIAS (A que será exportada)
-export const verificarEExecutarBackup = async () => {
+/* export const verificarEExecutarBackup = async () => {
   try {
     const ultimoBackup = await AsyncStorage.getItem('@ultimo_backup_girassol');
     const hoje = new Date();
@@ -46,5 +46,43 @@ export const verificarEExecutarBackup = async () => {
 
   } catch (error) {
     console.error("[BackupService] Erro na rotina de backup:", error);
+  }
+}; */
+
+export const verificarEExecutarBackup = async () => {
+  try {
+    const ultimoBackup = await AsyncStorage.getItem('@ultimo_backup_girassol');
+    const agora = new Date();
+
+    if (!ultimoBackup) {
+      await AsyncStorage.setItem('@ultimo_backup_girassol', agora.toISOString());
+      console.log("[BackupService] Primeira execução: Data base iniciada.");
+      return; 
+    }
+
+    const dataUltimoBackup = new Date(ultimoBackup);
+    const diffTime = Math.abs(agora - dataUltimoBackup);
+    
+    // --- AJUSTE PARA TESTES: CÁLCULO EM MINUTOS ---
+    // (1000ms * 60s) = 1 minuto
+    const diffMinutos = Math.floor(diffTime / (1000 * 60)); 
+    
+    const INTERVALO_TESTE = 2; // Defina aqui quantos minutos de intervalo para o teste
+
+    if (diffMinutos >= INTERVALO_TESTE) {
+      console.log(`[BackupService] Teste: Passaram-se ${diffMinutos} minutos. Disparando backup...`);
+      
+      const sucesso = await realizarBackupDrive(); 
+      
+      if (sucesso) {
+        await AsyncStorage.setItem('@ultimo_backup_girassol', agora.toISOString());
+        console.log("[BackupService] Backup de teste concluído e data atualizada!");
+      }
+    } else {
+      console.log(`[BackupService] Aguardando... Faltam ${INTERVALO_TESTE - diffMinutos} minutos para o próximo backup.`);
+    }
+
+  } catch (error) {
+    console.error("[BackupService] Erro na rotina de teste:", error);
   }
 };
