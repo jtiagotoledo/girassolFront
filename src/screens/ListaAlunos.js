@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, Switch, Modal, ScrollView } from 'react-native'; 
-import Icon from 'react-native-vector-icons/Feather'; 
-import { TextInputMask } from 'react-native-masked-text'; 
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, Switch, Modal, ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
+import { TextInputMask } from 'react-native-masked-text';
 // ATENÇÃO: Importamos a função buscarHistoricoPagamentos
-import db, { deletarAluno, registrarPagamento, buscarHistoricoPagamentos } from '../database/Database'; 
+import db, { deletarAluno, registrarPagamento, buscarHistoricoPagamentos } from '../database/Database';
+import { testarUploadDrive } from '../services/GoogleDriveService';
 
 // --- FUNÇÕES AUXILIARES DE DATA E MOEDA ---
 const formatarParaTela = (dataISO) => {
@@ -12,12 +13,12 @@ const formatarParaTela = (dataISO) => {
 };
 
 const verificarVencimento = (dataISO) => {
-  if (!dataISO) return true; 
+  if (!dataISO) return true;
   const hoje = new Date();
   const dataPagto = new Date(dataISO + 'T00:00:00');
   const diffTime = Math.abs(hoje - dataPagto);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 30; 
+  return diffDays > 30;
 };
 
 const obterDataHojeISO = () => {
@@ -32,7 +33,7 @@ const ListaAlunos = ({ navigation }) => {
   const [alunos, setAlunos] = useState([]);
   const [alunosFiltrados, setAlunosFiltrados] = useState([]);
   const [busca, setBusca] = useState('');
-  const [apenasAtivos, setApenasAtivos] = useState(true); 
+  const [apenasAtivos, setApenasAtivos] = useState(true);
 
   const [modalVisivel, setModalVisivel] = useState(false);
   const [alunoSelecionado, setAlunoSelecionado] = useState(null);
@@ -40,8 +41,8 @@ const ListaAlunos = ({ navigation }) => {
 
   const [modalPagamentoVisivel, setModalPagamentoVisivel] = useState(false);
   const [alunoPagamento, setAlunoPagamento] = useState(null);
-  const [dataPagamentoInput, setDataPagamentoInput] = useState(''); 
-  const [valorPagamentoInput, setValorPagamentoInput] = useState('0,00'); 
+  const [dataPagamentoInput, setDataPagamentoInput] = useState('');
+  const [valorPagamentoInput, setValorPagamentoInput] = useState('0,00');
 
   const carregarAlunos = () => {
     db.transaction((tx) => {
@@ -49,7 +50,7 @@ const ListaAlunos = ({ navigation }) => {
         `SELECT a.*, 
           (SELECT data_pagamento FROM pagamentos WHERE aluno_id = a.id ORDER BY data_pagamento DESC LIMIT 1) as ultimo_pagamento
          FROM alunos a ORDER BY a.nome ASC`,
-        [], 
+        [],
         (_tx, results) => {
           let tempAlunos = [];
           for (let i = 0; i < results.rows.length; i++) {
@@ -62,10 +63,21 @@ const ListaAlunos = ({ navigation }) => {
     });
   };
 
+  const executarTesteDrive = async () => {
+    // Chama o serviço que criamos
+    const sucesso = await testarUploadDrive();
+
+    if (sucesso) {
+      Alert.alert("Sucesso!", "O arquivo 'Teste_Girassol.txt' foi salvo no seu Drive!");
+    } else {
+      Alert.alert("Erro", "Falha ao criar o arquivo. Verifique o console do Metro Bundler.");
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       carregarAlunos();
-      setBusca(''); 
+      setBusca('');
     });
     return unsubscribe;
   }, [navigation]);
@@ -77,13 +89,13 @@ const ListaAlunos = ({ navigation }) => {
     }
     if (busca !== '') {
       const textoBuscado = busca.toLowerCase();
-      lista = lista.filter(aluno => 
-        aluno.nome.toLowerCase().includes(textoBuscado) || 
+      lista = lista.filter(aluno =>
+        aluno.nome.toLowerCase().includes(textoBuscado) ||
         aluno.cpf.includes(textoBuscado)
       );
     }
     setAlunosFiltrados(lista);
-  }, [busca, apenasAtivos, alunos]); 
+  }, [busca, apenasAtivos, alunos]);
 
   const confirmarExclusao = (id, nome) => {
     Alert.alert(
@@ -91,16 +103,16 @@ const ListaAlunos = ({ navigation }) => {
       `Tem certeza que deseja apagar o cadastro de ${nome}?`,
       [
         { text: "Cancelar", style: "cancel" },
-        { 
+        {
           text: "Sim, Excluir", style: "destructive",
           onPress: async () => {
             try {
               await deletarAluno(id);
-              carregarAlunos(); 
+              carregarAlunos();
             } catch (error) {
               Alert.alert("Erro", "Não foi possível excluir.");
             }
-          } 
+          }
         }
       ]
     );
@@ -109,7 +121,7 @@ const ListaAlunos = ({ navigation }) => {
   const abrirModalPagamento = (aluno) => {
     setAlunoPagamento(aluno);
     setDataPagamentoInput(formatarParaTela(obterDataHojeISO()));
-    setValorPagamentoInput('0,00'); 
+    setValorPagamentoInput('0,00');
     setModalPagamentoVisivel(true);
   };
 
@@ -126,7 +138,7 @@ const ListaAlunos = ({ navigation }) => {
     }
     try {
       await registrarPagamento(alunoPagamento.id, dataISO, valorNumerico);
-      carregarAlunos(); 
+      carregarAlunos();
       setModalPagamentoVisivel(false);
       Alert.alert("Sucesso", "Pagamento registrado com sucesso!");
     } catch (error) {
@@ -139,7 +151,7 @@ const ListaAlunos = ({ navigation }) => {
     setAlunoSelecionado(aluno);
     setHistoricoPagamentos([]); // Limpa o anterior enquanto carrega
     setModalVisivel(true);
-    
+
     try {
       const historico = await buscarHistoricoPagamentos(aluno.id);
       setHistoricoPagamentos(historico);
@@ -155,12 +167,12 @@ const ListaAlunos = ({ navigation }) => {
 
     return (
       // O CARTÃO INTEIRO AGORA É CLICÁVEL
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.card, isInativo && styles.cardInativo]}
         onPress={() => abrirDetalhes(item)}
         activeOpacity={0.7}
       >
-        
+
         <View style={styles.infoClicavel}>
           {/* NOME E CPF MAIORES */}
           <Text style={[styles.nome, isInativo && styles.textoInativo]}>
@@ -172,8 +184,8 @@ const ListaAlunos = ({ navigation }) => {
 
         <View style={styles.acoesContainer}>
           <View style={styles.actionsBox}>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.btnPagamento, isVencido ? styles.btnPagtoVencido : styles.btnPagtoEmDia]}
               onPress={() => abrirModalPagamento(item)}
               disabled={isInativo}
@@ -184,8 +196,8 @@ const ListaAlunos = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.btnEdit} 
+            <TouchableOpacity
+              style={styles.btnEdit}
               onPress={() => navigation.navigate('Cadastro', { alunoEditavel: item })}
             >
               <Text style={styles.btnText}>Editar</Text>
@@ -208,17 +220,26 @@ const ListaAlunos = ({ navigation }) => {
         <TouchableOpacity style={styles.btnAdd} onPress={() => navigation.navigate('Cadastro')}>
           <Text style={styles.btnAddText}>+ Novo</Text>
         </TouchableOpacity>
+        <View style={styles.container}>
+
+          {/* --- BOTÃO DE TESTE DO DRIVE --- */}
+          <TouchableOpacity style={styles.botaoTeste} onPress={executarTesteDrive}>
+            <Text style={styles.textoBotaoTeste}>☁️ Testar Backup no Drive</Text>
+          </TouchableOpacity>
+
+        </View>
       </View>
+
 
       <View style={styles.searchContainer}>
         <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput style={styles.searchInput} placeholder="Buscar por nome ou CPF..." placeholderTextColor="#999" value={busca} onChangeText={setBusca}/>
+        <TextInput style={styles.searchInput} placeholder="Buscar por nome ou CPF..." placeholderTextColor="#999" value={busca} onChangeText={setBusca} />
         {busca.length > 0 && <TouchableOpacity onPress={() => setBusca('')}><Icon name="x-circle" size={20} color="#999" /></TouchableOpacity>}
       </View>
 
       <View style={styles.switchContainer}>
         <Text style={styles.switchLabel}>Ocultar alunos inativos</Text>
-        <Switch trackColor={{ false: "#767577", true: "#FFD700" }} thumbColor={apenasAtivos ? "#000" : "#f4f3f4"} onValueChange={setApenasAtivos} value={apenasAtivos}/>
+        <Switch trackColor={{ false: "#767577", true: "#FFD700" }} thumbColor={apenasAtivos ? "#000" : "#f4f3f4"} onValueChange={setApenasAtivos} value={apenasAtivos} />
       </View>
 
       <FlatList
@@ -241,9 +262,9 @@ const ListaAlunos = ({ navigation }) => {
             <Text style={styles.modalTitle}>Registrar Pagamento</Text>
             {alunoPagamento && <Text style={styles.modalSubtitle}>Aluno(a): {alunoPagamento.nome}</Text>}
             <Text style={styles.modalLabelInput}>Data do Pagamento</Text>
-            <TextInputMask type={'datetime'} options={{ format: 'DD/MM/YYYY' }} style={styles.modalInput} value={dataPagamentoInput} onChangeText={setDataPagamentoInput} placeholder="DD/MM/AAAA"/>
+            <TextInputMask type={'datetime'} options={{ format: 'DD/MM/YYYY' }} style={styles.modalInput} value={dataPagamentoInput} onChangeText={setDataPagamentoInput} placeholder="DD/MM/AAAA" />
             <Text style={styles.modalLabelInput}>Valor (R$)</Text>
-            <TextInputMask type={'money'} options={{ precision: 2, separator: ',', delimiter: '.', unit: 'R$ ', suffixUnit: '' }} style={styles.modalInput} value={valorPagamentoInput} onChangeText={setValorPagamentoInput} keyboardType="numeric"/>
+            <TextInputMask type={'money'} options={{ precision: 2, separator: ',', delimiter: '.', unit: 'R$ ', suffixUnit: '' }} style={styles.modalInput} value={valorPagamentoInput} onChangeText={setValorPagamentoInput} keyboardType="numeric" />
             <View style={styles.modalRowButtons}>
               <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setModalPagamentoVisivel(false)}><Text style={styles.modalBtnCancelText}>Cancelar</Text></TouchableOpacity>
               <TouchableOpacity style={styles.modalBtnSave} onPress={salvarPagamento}><Text style={styles.modalBtnSaveText}>Salvar</Text></TouchableOpacity>
@@ -260,7 +281,7 @@ const ListaAlunos = ({ navigation }) => {
           <View style={styles.modalContent}>
             {alunoSelecionado && (
               <ScrollView showsVerticalScrollIndicator={false}>
-                
+
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{alunoSelecionado.nome}</Text>
                   <Text style={[styles.modalStatus, { color: alunoSelecionado.ativo === 1 ? '#28a745' : '#FF3B30' }]}>{alunoSelecionado.ativo === 1 ? '● ATIVO' : '● INATIVO'}</Text>
@@ -276,7 +297,7 @@ const ListaAlunos = ({ navigation }) => {
 
                   <Text style={styles.modalLabel}>CELULAR / WHATSAPP</Text>
                   <Text style={styles.modalDado}>{alunoSelecionado.celular || 'Não informado'}</Text>
-                  
+
                   <Text style={styles.modalLabel}>E-MAIL</Text>
                   <Text style={styles.modalDado}>{alunoSelecionado.email || 'Não informado'}</Text>
                 </View>
@@ -304,12 +325,12 @@ const ListaAlunos = ({ navigation }) => {
                 {/* SESSÃO 4: HISTÓRICO FINANCEIRO */}
                 <View style={styles.modalSectionDestacada}>
                   <Text style={[styles.modalLabel, { color: '#000' }]}>HISTÓRICO DE PAGAMENTOS</Text>
-                  
+
                   {historicoPagamentos.length > 0 ? (
                     historicoPagamentos.map((pag, index) => (
                       <View key={index} style={styles.linhaPagamento}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Icon name="check-circle" size={16} color="#28a745" style={{marginRight: 8}} />
+                          <Icon name="check-circle" size={16} color="#28a745" style={{ marginRight: 8 }} />
                           <Text style={styles.modalDadoPagtoData}>{formatarParaTela(pag.data_pagamento)}</Text>
                         </View>
                         <Text style={styles.modalDadoPagtoValor}>
@@ -347,22 +368,22 @@ const styles = StyleSheet.create({
   switchContainer: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 15, marginBottom: 5 },
   switchLabel: { fontSize: 14, color: '#666', marginRight: 10, fontWeight: '500' },
   list: { padding: 15 },
-  
+
   // O Card não é mais View, é TouchableOpacity, mas os estilos são os mesmos
   card: { backgroundColor: '#FFF', padding: 15, borderRadius: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, elevation: 2 },
   cardInativo: { backgroundColor: '#EFEFEF', opacity: 0.6, elevation: 0 },
-  
-  infoClicavel: { flex: 1 }, 
-  acoesContainer: { flex: 1.5, alignItems: 'flex-end' }, 
-  actionsBox: { flexDirection: 'row', alignItems: 'center' }, 
-  
+
+  infoClicavel: { flex: 1 },
+  acoesContainer: { flex: 1.5, alignItems: 'flex-end' },
+  actionsBox: { flexDirection: 'row', alignItems: 'center' },
+
   textoInativo: { color: '#888' },
   tagInativo: { fontSize: 12, color: '#FF3B30', fontWeight: 'bold' },
-  
+
   // --- MUDANÇA NAS FONTES DO CARTÃO ---
   nome: { fontSize: 21, fontWeight: '800', color: '#222' }, // MAIOR E MAIS ESCURO
   subtext: { color: '#555', fontSize: 15, marginTop: 4, fontWeight: '500' }, // MAIOR
-  
+
   btnPagamento: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, borderRadius: 8, marginRight: 8 },
   btnPagtoVencido: { backgroundColor: '#FF3B30' },
   btnPagtoEmDia: { backgroundColor: '#28a745' },
@@ -384,7 +405,7 @@ const styles = StyleSheet.create({
   modalSection: { marginBottom: 15 },
   modalLabel: { fontSize: 11, color: '#666', fontWeight: 'bold', marginBottom: 2 },
   modalDado: { fontSize: 16, color: '#333', marginBottom: 8 },
-  
+
   // --- ESTILOS DO HISTÓRICO DE PAGAMENTO ---
   modalSectionDestacada: { backgroundColor: '#F9F9F9', padding: 15, borderRadius: 10, marginTop: 10, marginBottom: 10 },
   linhaPagamento: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingVertical: 10 },
@@ -401,7 +422,22 @@ const styles = StyleSheet.create({
   modalBtnCancel: { flex: 1, backgroundColor: '#EEE', padding: 15, borderRadius: 8, alignItems: 'center', marginRight: 10 },
   modalBtnCancelText: { color: '#333', fontWeight: 'bold' },
   modalBtnSave: { flex: 1, backgroundColor: '#28a745', padding: 15, borderRadius: 8, alignItems: 'center' },
-  modalBtnSaveText: { color: '#FFF', fontWeight: 'bold' }
+  modalBtnSaveText: { color: '#FFF', fontWeight: 'bold' },
+  botaoTeste: {
+    backgroundColor: '#4285F4', // Azul do Google
+    padding: 15,
+    marginHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 3, // Sombrinha no Android
+  },
+  textoBotaoTeste: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
 export default ListaAlunos;
