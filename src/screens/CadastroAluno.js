@@ -88,10 +88,17 @@ const CadastroAluno = ({ route, navigation }) => {
       navigation.navigate('ListaAlunos');
 
     } catch (error) {
-      if (error.message && error.message.includes("UNIQUE constraint failed")) {
-        Alert.alert("Erro", "Este CPF já está cadastrado.");
+      console.log('Erro bruto recebido do banco:', error);
+      
+      // Transforma o erro em string de forma segura, seja ele nulo, objeto ou texto
+      const mensagemErro = error?.message || String(error) || "";
+      console.log('mensagemErro', mensagemErro);
+      
+      // Verifica se a mensagem contém a palavra UNIQUE (ignorando maiúsculas/minúsculas)
+      if (mensagemErro.toLowerCase().includes("unique constraint failed") || mensagemErro.toLowerCase().includes("cpf")) {
+        Alert.alert("Atenção", "Este CPF já está cadastrado no sistema.");
       } else {
-        Alert.alert("Erro", "Falha ao salvar no banco de dados.");
+        Alert.alert("Erro", "Falha ao salvar no banco de dados. Verifique os dados e tente novamente.");
       }
     }
   };

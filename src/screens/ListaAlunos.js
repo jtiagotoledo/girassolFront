@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 // ATENÇÃO: Importamos a função buscarHistoricoPagamentos
 import db, { deletarAluno, registrarPagamento, buscarHistoricoPagamentos } from '../database/Database';
-import { testarUploadDrive } from '../services/GoogleDriveService';
+import { realizarBackupBancoDados } from '../services/GoogleDriveService';
 
 // --- FUNÇÕES AUXILIARES DE DATA E MOEDA ---
 const formatarParaTela = (dataISO) => {
@@ -65,7 +65,7 @@ const ListaAlunos = ({ navigation }) => {
 
   const executarTesteDrive = async () => {
     // Chama o serviço que criamos
-    const sucesso = await testarUploadDrive();
+    const sucesso = await realizarBackupBancoDados();
 
     if (sucesso) {
       Alert.alert("Sucesso!", "O arquivo 'Teste_Girassol.txt' foi salvo no seu Drive!");

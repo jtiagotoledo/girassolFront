@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard } from
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-import { verificarEExecutarBackup } from '../services/BackupService';
+import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
 
 // --- FUNÇÕES AUXILIARES ---
 const verificarVencimento = (dataISO) => {
@@ -12,6 +12,8 @@ const verificarVencimento = (dataISO) => {
   const dataPagto = new Date(dataISO + 'T00:00:00');
   const diffTime = Math.abs(hoje - dataPagto);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  console.log();
+  
   return diffDays > 30; 
 };
 
@@ -31,90 +33,91 @@ const Checkin = ({ navigation }) => {
   const [mensagemFeedback, setMensagemFeedback] = useState({});
 
   const processarCheckin = () => {
-    // 1. Valida se o CPF está completo
-    if (cpfDigitado.length !== 14) {
-      Alert.alert("Ops!", "Por favor, digite o CPF completo.");
-      return;
-    }
+  if (cpfDigitado.length !== 14) {
+    Alert.alert("Ops!", "Por favor, digite o CPF completo.");
+    return;
+  }
 
-    Keyboard.dismiss(); // Esconde o teclado virtual do tablet
+  Keyboard.dismiss();
 
-    const mesAtual = obterAnoMesAtual();
+  db.transaction((tx) => {
+    tx.executeSql(
+      `SELECT a.id, a.nome, a.lim_aulas, a.ativo,
+        -- Busca a data do último pagamento
+        (SELECT data_pagamento FROM pagamentos WHERE aluno_id = a.id ORDER BY data_pagamento DESC LIMIT 1) as ultimo_pagamento,
+        
+        -- CONTAGEM INTELIGENTE: Conta check-ins apenas DEPOIS do último pagamento realizado
+        (SELECT COUNT(*) FROM checkins 
+         WHERE aluno_id = a.id 
+         AND data_hora >= (SELECT data_pagamento FROM pagamentos WHERE aluno_id = a.id ORDER BY data_pagamento DESC LIMIT 1)
+        ) as checkins_ciclo
+       FROM alunos a 
+       WHERE a.cpf = ?`,
+      [cpfDigitado], 
+      async (_tx, results) => {
+        
+        if (results.rows.length === 0) {
+          setStatusCheckin('erro');
+          setMensagemFeedback({
+            titulo: "Aluno não encontrado",
+            motivo: "Verifique se o CPF foi digitado corretamente."
+          });
+          setModalVisivel(true);
+          return;
+        }
 
-    db.transaction((tx) => {
-      // 2. Busca APENAS o aluno dono desse CPF
-      tx.executeSql(
-        `SELECT a.id, a.nome, a.lim_aulas, a.ativo,
-          (SELECT data_pagamento FROM pagamentos WHERE aluno_id = a.id ORDER BY data_pagamento DESC LIMIT 1) as ultimo_pagamento,
-          (SELECT COUNT(*) FROM checkins WHERE aluno_id = a.id AND data_hora LIKE ?) as checkins_mes
-         FROM alunos a 
-         WHERE a.cpf = ?`,
-        [`${mesAtual}%`, cpfDigitado],
-        async (_tx, results) => {
-          
-          if (results.rows.length === 0) {
-            // Aluno não encontrado
-            setStatusCheckin('erro');
+        const aluno = results.rows.item(0);
+
+        // REGRAS DE NEGÓCIO ATUALIZADAS
+        const isAtivo = aluno.ativo === 1;
+        const isPagtoOk = !verificarVencimento(aluno.ultimo_pagamento);
+        // Agora usamos o checkins_ciclo que vem da query
+        const isLimiteOk = aluno.checkins_ciclo < aluno.lim_aulas;
+
+        if (isAtivo && isPagtoOk && isLimiteOk) {
+          try {
+            await registrarCheckin(aluno.id);
+            verificarEExecutarBackupAutomatico();
+            
+            setStatusCheckin('sucesso');
             setMensagemFeedback({
-              titulo: "Aluno não encontrado",
-              motivo: "Verifique se o CPF foi digitado corretamente."
-            });
-            setModalVisivel(true);
-            return;
-          }
-
-          const aluno = results.rows.item(0);
-
-          // 3. Aplica as 3 Regras de Negócio
-          const isAtivo = aluno.ativo === 1;
-          const isPagtoOk = !verificarVencimento(aluno.ultimo_pagamento);
-          const isLimiteOk = aluno.checkins_mes < aluno.lim_aulas;
-
-          if (isAtivo && isPagtoOk && isLimiteOk) {
-            // SUCESSO: Passou em tudo!
-            try {
-              await registrarCheckin(aluno.id);
-              verificarEExecutarBackup();
-              setStatusCheckin('sucesso');
-              setMensagemFeedback({
-                titulo: `Bem-vindo(a), ${aluno.nome.split(' ')[0]}!`, // Pega só o primeiro nome
-                motivo: `Check-in confirmado. Boa aula!\n(${aluno.checkins_mes + 1} de ${aluno.lim_aulas} aulas)`
-              });
-              setModalVisivel(true);
-              
-              // Limpa o CPF para o próximo aluno após 3 segundos
-              setTimeout(() => {
-                setCpfDigitado('');
-                setModalVisivel(false);
-              }, 4000);
-
-            } catch (error) {
-              Alert.alert("Erro", "Falha técnica ao salvar entrada.");
-            }
-          } else {
-            // BLOQUEADO: Descobre qual foi o motivo para avisar o aluno
-            let motivoBloqueio = "";
-            if (!isAtivo) motivoBloqueio = "Sua matrícula consta como Inativa.";
-            else if (!isPagtoOk) motivoBloqueio = "Há uma pendência em sua mensalidade.";
-            else if (!isLimiteOk) motivoBloqueio = `Você já atingiu o limite de ${aluno.lim_aulas} aulas mensais.`;
-
-            setStatusCheckin('erro');
-            setMensagemFeedback({
-              titulo: `Acesso Bloqueado`,
-              motivo: `${motivoBloqueio}\nPor favor, dirija-se à recepção.`
+              titulo: `Bem-vindo(a), ${aluno.nome.split(' ')[0]}!`,
+              motivo: `Check-in confirmado. Boa aula!\n(${aluno.checkins_ciclo + 1} de ${aluno.lim_aulas} aulas no ciclo)`
             });
             setModalVisivel(true);
             
             setTimeout(() => {
               setCpfDigitado('');
               setModalVisivel(false);
-            }, 5000);
+            }, 4000);
+
+          } catch (error) {
+            Alert.alert("Erro", "Falha técnica ao salvar entrada.");
           }
-        },
-        (_tx, error) => console.error("Erro no SQL do Checkin:", error)
-      );
-    });
-  };
+        } else {
+          // Lógica de Bloqueio
+          let motivoBloqueio = "";
+          if (!isAtivo) motivoBloqueio = "Sua matrícula consta como Inativa.";
+          else if (!isPagtoOk) motivoBloqueio = "Seu ciclo de 30 dias expirou. Pendência de renovação.";
+          else if (!isLimiteOk) motivoBloqueio = `Você já utilizou suas ${aluno.lim_aulas} aulas deste ciclo.`;
+
+          setStatusCheckin('erro');
+          setMensagemFeedback({
+            titulo: `Acesso Bloqueado`,
+            motivo: `${motivoBloqueio}\nPor favor, dirija-se à recepção.`
+          });
+          setModalVisivel(true);
+          
+          setTimeout(() => {
+            setCpfDigitado('');
+            setModalVisivel(false);
+          }, 5000);
+        }
+      },
+      (_tx, error) => console.error("Erro no SQL do Checkin:", error)
+    );
+  });
+};
 
   return (
     <View style={styles.container}>

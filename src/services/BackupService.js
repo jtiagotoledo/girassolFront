@@ -1,88 +1,42 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Se for usar o Share nativo, importe aqui:
-// import RNFS from 'react-native-fs';
-// import Share from 'react-native-share';
+// Importamos a função real que fizemos no outro arquivo
+import { realizarBackupBancoDados } from './GoogleDriveService';
 
-// 1. A FUNÇÃO QUE FAZ O TRABALHO PESADO (O UPLOAD/CÓPIA)
-const realizarBackupDrive = async () => {
-  console.log("Iniciando a cópia do banco de dados para backup...");
-  
-  // AQUI VAI O SEU CÓDIGO DE BACKUP (Aquele que usa o RNFS e o Share, 
-  // ou a API silenciosa do Google Drive).
-  
-  // Exemplo de sucesso:
-  return true; 
-};
-
-// 2. A FUNÇÃO DE VERIFICAÇÃO DE 7 DIAS (A que será exportada)
-/* export const verificarEExecutarBackup = async () => {
-  try {
-    const ultimoBackup = await AsyncStorage.getItem('@ultimo_backup_girassol');
-    const hoje = new Date();
-
-    if (!ultimoBackup) {
-      await AsyncStorage.setItem('@ultimo_backup_girassol', hoje.toISOString());
-      console.log("[BackupService] Primeiro uso: Data base iniciada.");
-      return; 
-    }
-
-    const dataUltimoBackup = new Date(ultimoBackup);
-    const diffTime = Math.abs(hoje - dataUltimoBackup);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays >= 7) {
-      console.log(`[BackupService] Já se passaram ${diffDays} dias. Disparando backup...`);
-      
-      // Chama a função de trabalho pesado que está logo ali em cima
-      const sucesso = await realizarBackupDrive(); 
-      
-      if (sucesso) {
-        await AsyncStorage.setItem('@ultimo_backup_girassol', hoje.toISOString());
-        console.log("[BackupService] Backup semanal concluído e data atualizada!");
-      }
-    } else {
-      console.log(`[BackupService] Tudo ok. Faltam ${7 - diffDays} dias para o próximo backup.`);
-    }
-
-  } catch (error) {
-    console.error("[BackupService] Erro na rotina de backup:", error);
-  }
-}; */
-
-export const verificarEExecutarBackup = async () => {
+export const verificarEExecutarBackupAutomatico = async () => {
   try {
     const ultimoBackup = await AsyncStorage.getItem('@ultimo_backup_girassol');
     const agora = new Date();
 
+    // Se nunca foi feito, marca agora como a primeira data e encerra
     if (!ultimoBackup) {
       await AsyncStorage.setItem('@ultimo_backup_girassol', agora.toISOString());
-      console.log("[BackupService] Primeira execução: Data base iniciada.");
-      return; 
+      console.log("[Backup] Primeira execução: data base registrada.");
+      return;
     }
 
     const dataUltimoBackup = new Date(ultimoBackup);
     const diffTime = Math.abs(agora - dataUltimoBackup);
     
-    // --- AJUSTE PARA TESTES: CÁLCULO EM MINUTOS ---
-    // (1000ms * 60s) = 1 minuto
+    // --- LÓGICA DE TEMPO ---
+    // Para teste: 2 minutos. Para produção: 7 dias (1000 * 60 * 60 * 24 * 7)
     const diffMinutos = Math.floor(diffTime / (1000 * 60)); 
-    
-    const INTERVALO_TESTE = 2; // Defina aqui quantos minutos de intervalo para o teste
+    const INTERVALO_MINUTOS = 2; 
 
-    if (diffMinutos >= INTERVALO_TESTE) {
-      console.log(`[BackupService] Teste: Passaram-se ${diffMinutos} minutos. Disparando backup...`);
+    if (diffMinutos >= INTERVALO_MINUTOS) {
+      console.log(`[Backup] Iniciando backup automático (Passaram-se ${diffMinutos} min)...`);
       
-      const sucesso = await realizarBackupDrive(); 
+      // Executa o upload real para o Drive
+      const sucesso = await realizarBackupBancoDados(); 
       
       if (sucesso) {
         await AsyncStorage.setItem('@ultimo_backup_girassol', agora.toISOString());
-        console.log("[BackupService] Backup de teste concluído e data atualizada!");
+        console.log("[Backup] Backup automático concluído com sucesso!");
       }
     } else {
-      console.log(`[BackupService] Aguardando... Faltam ${INTERVALO_TESTE - diffMinutos} minutos para o próximo backup.`);
+      console.log(`[Backup] Próximo backup em ${INTERVALO_MINUTOS - diffMinutos} minutos.`);
     }
 
   } catch (error) {
-    console.error("[BackupService] Erro na rotina de teste:", error);
+    console.error("[Backup] Erro na rotina automática:", error);
   }
 };

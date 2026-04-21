@@ -61,20 +61,38 @@ export default db;
 
 export const cadastrarAluno = (aluno) => {
   return new Promise((resolve, reject) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        `INSERT INTO alunos (
-          nome, cpf, data_nasc, email, celular, logradouro, numero, complemento, bairro, cidade, uf, cep, lim_aulas, ativo
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [
-          aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
-          aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
-          aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
-        ],
-        (_, results) => { resolve(results); },
-        (_, error) => { reject(error); }
-      );
-    });
+    db.transaction(
+      // 1. Bloco de Execução
+      (tx) => {
+        tx.executeSql(
+          `INSERT INTO alunos (
+            nome, cpf, data_nasc, email, celular, logradouro, numero, complemento, bairro, cidade, uf, cep, lim_aulas, ativo
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [
+            aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
+            aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
+            aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
+          ],
+          // SUCESSO
+          (_, results) => { 
+            resolve(results); 
+          },
+          // ERRO NA QUERY
+          (txObj, erroSql) => { 
+            // Algumas versões passam o erro no txObj, outras no erroSql. Vamos capturar os dois!
+            const erroReal = erroSql || txObj;
+            console.log("❌ Erro capturado no executeSql:", erroReal);
+            reject(erroReal); 
+            return true; // Cancela a transação
+          }
+        );
+      },
+      // 2. Erro na Transação (Fallback de segurança)
+      (erroTransacao) => {
+        console.log("❌ Erro capturado na Transação:", erroTransacao);
+        if (erroTransacao) reject(erroTransacao);
+      }
+    );
   });
 };
 
