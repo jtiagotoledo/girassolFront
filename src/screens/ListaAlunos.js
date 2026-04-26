@@ -5,6 +5,7 @@ import { TextInputMask } from 'react-native-masked-text';
 // ATENÇÃO: Importamos a função buscarHistoricoPagamentos
 import db, { deletarAluno, registrarPagamento, buscarHistoricoPagamentos } from '../database/Database';
 import { realizarBackupBancoDados } from '../services/GoogleDriveService';
+import { testeSimplesImpressora } from '../testes/testeImpressao';
 
 // --- FUNÇÕES AUXILIARES DE DATA E MOEDA ---
 const formatarParaTela = (dataISO) => {
@@ -222,9 +223,11 @@ const ListaAlunos = ({ navigation }) => {
         </TouchableOpacity>
         <View style={styles.container}>
 
-          {/* --- BOTÃO DE TESTE DO DRIVE --- */}
-          <TouchableOpacity style={styles.botaoTeste} onPress={executarTesteDrive}>
+          {/* <TouchableOpacity style={styles.botaoTeste} onPress={executarTesteDrive}>
             <Text style={styles.textoBotaoTeste}>☁️ Testar Backup no Drive</Text>
+          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.botaoTeste} onPress={testeSimplesImpressora}>
+            <Text style={styles.textoBotaoTeste}>Testar Impressão</Text>
           </TouchableOpacity>
 
         </View>
