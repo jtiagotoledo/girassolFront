@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
 import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
+import { imprimirTicketCheckin } from '../services/PrinterService';
 
 // --- FUNÇÕES AUXILIARES ---
 const verificarVencimento = (dataISO) => {
@@ -76,9 +77,18 @@ const Checkin = ({ navigation }) => {
 
         if (isAtivo && isPagtoOk && isLimiteOk) {
           try {
+            // 1. Salva no SQLite
             await registrarCheckin(aluno.id);
+            
+            // 2. Aciona o Backup invisível
             verificarEExecutarBackupAutomatico();
             
+            // 3. DISPARA A IMPRESSORA! 🖨️
+            // Passamos: Nome, Checkin atual (que é os antigos + 1) e o Limite.
+            // Repare que NÃO usamos 'await' aqui. Assim a tela não trava esperando a impressora!
+            imprimirTicketCheckin(aluno.nome, aluno.checkins_ciclo + 1, aluno.lim_aulas);
+
+            // 4. Mostra a mensagem de sucesso na tela do tablet
             setStatusCheckin('sucesso');
             setMensagemFeedback({
               titulo: `Bem-vindo(a), ${aluno.nome.split(' ')[0]}!`,
@@ -86,6 +96,7 @@ const Checkin = ({ navigation }) => {
             });
             setModalVisivel(true);
             
+            // 5. Fecha o modal
             setTimeout(() => {
               setCpfDigitado('');
               setModalVisivel(false);
@@ -94,7 +105,7 @@ const Checkin = ({ navigation }) => {
           } catch (error) {
             Alert.alert("Erro", "Falha técnica ao salvar entrada.");
           }
-        } else {
+        }else {
           // Lógica de Bloqueio
           let motivoBloqueio = "";
           if (!isAtivo) motivoBloqueio = "Sua matrícula consta como Inativa.";
@@ -137,7 +148,7 @@ const Checkin = ({ navigation }) => {
           <Icon name="sun" size={60} color="#FFD700" />
         </View>
 
-        <Text style={styles.title}>Girassol Pilates</Text>
+        <Text style={styles.title}>Espaço Girassol</Text>
         <Text style={styles.subtitle}>Digite seu CPF para confirmar presença</Text>
 
         <TextInputMask
