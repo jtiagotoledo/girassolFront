@@ -11,6 +11,8 @@ import {
  */
 export const enviarMensagemWhatsapp = async (number, message) => {
   try {
+    console.log('EVOLUTION_API_KEY',EVOLUTION_API_KEY);
+    
     let formattedNumber = number.replace(/\D/g, '');
     
     if (!formattedNumber.startsWith('55')) {

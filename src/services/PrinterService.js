@@ -1,45 +1,49 @@
 // src/services/PrinterService.js
 import ThermalPrinterModule from 'react-native-thermal-printer';
 
-export const imprimirTicketCheckin = async (nomeCompleto, aulaAtual, limiteAulas) => {
+export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdicional) => {
   try {
-    // 1. Pega a data e hora do exato momento do check-in
     const agora = new Date();
     const dataFormatada = agora.toLocaleDateString('pt-BR');
     const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    // 2. Pega apenas os dois primeiros nomes do aluno para não quebrar a linha do papel
-    const nomeCurto = nomeCompleto.split(' ').slice(0, 2).join(' ');
+    const nomeSeguro = nomeCompleto || "Aluno";
+    const nomeCurto = nomeSeguro.split(' ').slice(0, 2).join(' ');
 
-    // 3. Monta o layout do recibo usando as tags da biblioteca
+    // Detecta se é erro/bloqueio pela string enviada no checkin
+    const infoStr = String(infoPrincipal);
+    const isErro = infoStr.includes("PAGTO:") || infoStr === "ERRO";
+
     const layoutRecibo = 
-      '[C]<b>ESPAÇO GIRASSOL</b>\n' +
-      '[C]--------------------------------\n' +
-      '[C]<b>TICKET DE ENTRADA</b>\n' +
-      '[L]\n' +
+      `[C]<b>ESPAÇO LEVIARE</b>\n` +
+      `[C]--------------------------------\n` +
+      `[C]<b>${isErro ? 'PENDÊNCIA DE ACESSO' : 'TICKET DE ENTRADA'}</b>\n` +
+      `[L]\n` +
       `[L]Aluno(a): ${nomeCurto}\n` +
       `[L]Data: ${dataFormatada} as ${horaFormatada}\n` +
-      `[L]Aula: ${aulaAtual} de ${limiteAulas}
-      \n` +
-      '[C]--------------------------------\n' +
-      '[C]Bom treino!\n' +
-      '[L] \n' +
-      '[L] \n' +
-      '[L] \n' +
-      '[L] \n' +
-      '[L] \n' +
-      '[L] .\n'; // O famoso "empurrador" de papel
+      
+      // Linha de Aula ou Info de Erro
+      `[L]${isErro ? infoStr : 'Aula: ' + infoStr}\n` +
+      
+      // Linha Adicional: Mostra Motivo (se erro) ou Último Pagamento (se sucesso)
+      `[L]${isErro ? '<b>Motivo: ' + dadoAdicional + '</b>' : 'Ult. Pagamento: ' + dadoAdicional}\n` +
+      
+      `\n` +
+      `[C]--------------------------------\n` +
+      `[L]\n` +
+      `[L]\n` +
+      `[L]\n` +
+      `[L].\n`;
 
-    // 4. Manda para a impressora
     await ThermalPrinterModule.printTcp({
-      ip: '192.168.15.200', // O IP fixo que você configurou
+      ip: '192.168.15.200', 
       port: 9100,
       timeout: 5000,
       payload: layoutRecibo,
       autoCut: true, 
     });
 
-    console.log("✅ Ticket impresso com sucesso!");
+    console.log("✅ Ticket impresso com data de pagamento!");
     return true;
 
   } catch (error) {
