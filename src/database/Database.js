@@ -170,6 +170,34 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
   });
 };
 
+// Excluir um pagamento específico
+export const deletarPagamento = (id) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'DELETE FROM pagamentos WHERE id = ?',
+        [id],
+        () => resolve(),
+        (_, error) => reject(error)
+      );
+    });
+  });
+};
+
+// Editar um pagamento existente
+export const atualizarPagamento = (id, data, valor) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'UPDATE pagamentos SET data_pagamento = ?, valor = ? WHERE id = ?',
+        [data, valor, id],
+        () => resolve(),
+        (_, error) => reject(error)
+      );
+    });
+  });
+};
+
 export const registrarCheckin = (aluno_id) => {
   return new Promise((resolve, reject) => {
     const hoje = new Date();
