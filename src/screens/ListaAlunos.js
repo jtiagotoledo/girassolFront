@@ -263,7 +263,7 @@ const ListaAlunos = ({ navigation }) => {
             style={[styles.btnPagamento, isVencido ? styles.btnPagtoVencido : styles.btnPagtoEmDia]} 
             onPress={() => abrirModalPagamento(item)}
           >
-            <Text style={styles.btnTextPagto}>{formatarParaTela(item.ultimo_pagamento) || 'Pagar'}</Text>
+            <Text style={styles.btnTextPagto}>{formatarParaTela(item.ultimo_pagamento) || 'Pagamento'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnEdit} onPress={() => navigation.navigate('Cadastro', { alunoEditavel: item })}>
             <Icon name="edit" size={20} color="#FFF" />

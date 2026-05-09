@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // 1. Importe isso
 import { setupDatabase } from './src/database/Database';
 import AppNavigator from './src/navigation/AppNavigator';
+//import ImportadorDB from './src/screens/ImportadorDb';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { GOOGLE_WEB_CLIENT_ID } from '@env';
 
@@ -34,6 +35,7 @@ const App = () => {
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" />
         <AppNavigator />
+        {/* <ImportadorDB/> */}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
