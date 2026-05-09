@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, S
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 
-// Importações do Banco de Dados
 import db, { 
   deletarAluno, 
   registrarPagamento, 
@@ -12,6 +11,7 @@ import db, {
   atualizarPagamento   
 } from '../database/Database';
 
+// --- FUNÇÕES AUXILIARES ---
 const formatarParaTela = (dataISO) => {
   if (!dataISO) return null;
   return dataISO.split('-').reverse().join('/');
@@ -31,6 +31,32 @@ const obterDataHojeISO = () => {
   return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 };
 
+const obterDataHoraAtualBanco = () => {
+  const hoje = new Date();
+  const data = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const hora = `${String(hoje.getHours()).padStart(2, '0')}:${String(hoje.getMinutes()).padStart(2, '0')}:${String(hoje.getSeconds()).padStart(2, '0')}`;
+  return `${data} ${hora}`;
+};
+
+// Motor de datas à prova de falhas do SQLite
+const extrairData = (valorBanco) => {
+  if (!valorBanco) return 0;
+  const str = String(valorBanco).trim();
+  try {
+    if (str.includes('/')) {
+      const partes = str.split(/[\s/:]+/); 
+      return new Date(partes[2], partes[1] - 1, partes[0]).getTime();
+    }
+    if (str.includes('-')) {
+      const partes = str.split(/[\s-:]+/);
+      return new Date(partes[0], partes[1] - 1, partes[2]).getTime();
+    }
+    return new Date(str).getTime() || 0;
+  } catch (e) {
+    return 0;
+  }
+};
+
 const ListaAlunos = ({ navigation }) => {
   const [alunos, setAlunos] = useState([]);
   const [alunosFiltrados, setAlunosFiltrados] = useState([]);
@@ -48,6 +74,12 @@ const ListaAlunos = ({ navigation }) => {
   const [dataPagamentoInput, setDataPagamentoInput] = useState('');
   const [valorPagamentoInput, setValorPagamentoInput] = useState('0,00');
   const [idPagamentoEdicao, setIdPagamentoEdicao] = useState(null);
+
+  // Estados para Ajuste de Aulas
+  const [aulasUsadas, setAulasUsadas] = useState(0);
+  const [checkinsCicloAtual, setCheckinsCicloAtual] = useState([]);
+  const [modalAjusteVisivel, setModalAjusteVisivel] = useState(false);
+  const [inputAulas, setInputAulas] = useState('0');
 
   const carregarAlunos = () => {
     db.transaction((tx) => {
@@ -77,8 +109,77 @@ const ListaAlunos = ({ navigation }) => {
     setAlunosFiltrados(lista);
   }, [busca, apenasAtivos, alunos]);
 
-  // --- FUNÇÕES DE AÇÃO ---
+  // --- LÓGICA DE AULAS ---
+  const carregarAulasDoCiclo = (alunoId) => {
+    db.transaction(tx => {
+      // 1. Acha o último pagamento
+      tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [alunoId], (_, resPag) => {
+        let timestampUltimoPagto = 0;
+        if (resPag.rows.length > 0) {
+          const dataBase = new Date(extrairData(resPag.rows.item(0).data_pagamento));
+          timestampUltimoPagto = new Date(dataBase.getFullYear(), dataBase.getMonth(), dataBase.getDate()).getTime();
+        }
 
+        // 2. Busca e filtra check-ins
+        tx.executeSql(`SELECT id, data_hora FROM checkins WHERE aluno_id = ?`, [alunoId], (_tx2, resChk) => {
+          let contagem = 0;
+          let checkins = [];
+          for (let i = 0; i < resChk.rows.length; i++) {
+            const chk = resChk.rows.item(i);
+            const timeChk = extrairData(chk.data_hora);
+            if (timeChk >= timestampUltimoPagto && timestampUltimoPagto > 0) {
+              contagem++;
+              checkins.push(chk);
+            }
+          }
+          // Ordena do mais recente para o mais antigo (útil caso precisemos deletar)
+          checkins.sort((a, b) => extrairData(b.data_hora) - extrairData(a.data_hora));
+          
+          setAulasUsadas(contagem);
+          setCheckinsCicloAtual(checkins);
+        });
+      });
+    });
+  };
+
+  const salvarAjusteAulas = () => {
+    const novoValor = parseInt(inputAulas, 10);
+    if (isNaN(novoValor) || novoValor < 0) {
+      Alert.alert("Ops!", "Digite um número válido.");
+      return;
+    }
+
+    const diferenca = novoValor - aulasUsadas;
+    if (diferenca === 0) {
+      setModalAjusteVisivel(false);
+      return;
+    }
+
+    db.transaction(tx => {
+      if (diferenca > 0) {
+        // Aluno fez mais aulas. Adiciona check-ins compensatórios com a data de hoje.
+        const agora = obterDataHoraAtualBanco();
+        for (let i = 0; i < diferenca; i++) {
+          tx.executeSql(`INSERT INTO checkins (aluno_id, data_hora) VALUES (?, ?)`, [alunoSelecionado.id, agora]);
+        }
+      } else {
+        // Aluno fez menos aulas. Remove os check-ins mais recentes do ciclo.
+        const qtdRemover = Math.abs(diferenca);
+        for (let i = 0; i < qtdRemover; i++) {
+          if (checkinsCicloAtual[i]) {
+            tx.executeSql(`DELETE FROM checkins WHERE id = ?`, [checkinsCicloAtual[i].id]);
+          }
+        }
+      }
+    }, (error) => {
+      Alert.alert("Erro", "Falha ao ajustar as aulas.");
+    }, () => {
+      setModalAjusteVisivel(false);
+      carregarAulasDoCiclo(alunoSelecionado.id); // Atualiza a contagem na tela
+    });
+  };
+
+  // --- FUNÇÕES DE AÇÃO ---
   const confirmarExclusaoAluno = (id, nome) => {
     Alert.alert("Excluir Aluno", `Deseja apagar o cadastro de ${nome}?`, [
       { text: "Cancelar" },
@@ -119,6 +220,7 @@ const ListaAlunos = ({ navigation }) => {
       if (alunoSelecionado) {
         const hist = await buscarHistoricoPagamentos(alunoSelecionado.id);
         setHistoricoPagamentos(hist);
+        carregarAulasDoCiclo(alunoSelecionado.id); // Recarrega aulas caso o pagamento altere o ciclo
       }
       setModalPagamentoVisivel(false);
       Alert.alert("Sucesso", "Pagamento processado!");
@@ -130,6 +232,7 @@ const ListaAlunos = ({ navigation }) => {
   const abrirDetalhes = async (aluno) => {
     setAlunoSelecionado(aluno);
     setModalVisivel(true);
+    carregarAulasDoCiclo(aluno.id);
     const hist = await buscarHistoricoPagamentos(aluno.id);
     setHistoricoPagamentos(hist);
   };
@@ -141,6 +244,7 @@ const ListaAlunos = ({ navigation }) => {
         await deletarPagamento(id);
         const hist = await buscarHistoricoPagamentos(alunoSelecionado.id);
         setHistoricoPagamentos(hist);
+        carregarAulasDoCiclo(alunoSelecionado.id); // Recarrega aulas caso o ciclo tenha retrocedido
         carregarAlunos();
       }}
     ]);
@@ -210,6 +314,30 @@ const ListaAlunos = ({ navigation }) => {
         </View>
       </Modal>
 
+      {/* MODAL AJUSTE DE AULAS */}
+      <Modal visible={modalAjusteVisivel} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentSmall}>
+            <Text style={styles.modalTitle}>Ajustar Aulas</Text>
+            <Text style={styles.modalSub}>{alunoSelecionado?.nome}</Text>
+            <Text style={styles.modalLabelInput}>Aulas já realizadas neste ciclo:</Text>
+            
+            <TextInput 
+              style={styles.modalInput} 
+              value={inputAulas} 
+              onChangeText={setInputAulas} 
+              keyboardType="numeric" 
+              selectTextOnFocus
+            />
+            
+            <View style={styles.modalRowButtons}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setModalAjusteVisivel(false)}><Text>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnSave} onPress={salvarAjusteAulas}><Text style={{color:'#FFF'}}>Salvar</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* MODAL DETALHES COMPLETO */}
       <Modal visible={modalVisivel} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -247,10 +375,25 @@ const ListaAlunos = ({ navigation }) => {
                   )}
                 </View>
 
-                {/* PLANO */}
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>LIMITE DE AULAS</Text>
-                  <Text style={styles.modalDado}>{alunoSelecionado.lim_aulas} aulas mensais</Text>
+                {/* PLANO E AULAS (NOVO) */}
+                <View style={styles.modalSectionDestacada}>
+                  <Text style={[styles.modalLabel, { color: '#000' }]}>CONSUMO DO PLANO ATUAL</Text>
+                  <View style={styles.linhaAulas}>
+                    <View>
+                      <Text style={styles.textoAulasDestaque}>{aulasUsadas} / {alunoSelecionado.lim_aulas}</Text>
+                      <Text style={styles.subtextoAulas}>aulas realizadas</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.btnAjustarAulas} 
+                      onPress={() => {
+                        setInputAulas(String(aulasUsadas));
+                        setModalAjusteVisivel(true);
+                      }}
+                    >
+                      <Icon name="edit-3" size={20} color="#000" />
+                      <Text style={styles.btnAjustarAulasTexto}>Ajustar</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* HISTÓRICO FINANCEIRO EDITÁVEL */}
@@ -312,6 +455,7 @@ const styles = StyleSheet.create({
   modalContentSmall: { backgroundColor: '#FFF', width: '85%', borderRadius: 15, padding: 20 },
   modalHeader: { borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 15 },
   modalTitle: { fontSize: 22, fontWeight: 'bold' },
+  modalSub: { fontSize: 16, color: '#666', marginBottom: 15 },
   modalStatus: { fontSize: 14, fontWeight: 'bold', marginTop: 5 },
   modalSection: { marginBottom: 15 },
   modalLabel: { fontSize: 12, color: '#666', fontWeight: 'bold', marginBottom: 2 },
@@ -321,7 +465,12 @@ const styles = StyleSheet.create({
   modalRowButtons: { flexDirection: 'row', justifyContent: 'space-between' },
   modalBtnSave: { backgroundColor: '#28a745', padding: 15, borderRadius: 8, flex: 1, alignItems: 'center', marginLeft: 5 },
   modalBtnCancel: { backgroundColor: '#EEE', padding: 15, borderRadius: 8, flex: 1, alignItems: 'center', marginRight: 5 },
-  modalSectionDestacada: { marginTop: 20, backgroundColor: '#F9F9F9', padding: 10, borderRadius: 8 },
+  modalSectionDestacada: { marginTop: 15, backgroundColor: '#FFF3CD', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#FFEeba' },
+  linhaAulas: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  textoAulasDestaque: { fontSize: 28, fontWeight: 'bold', color: '#856404' },
+  subtextoAulas: { fontSize: 14, color: '#856404' },
+  btnAjustarAulas: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFD700', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
+  btnAjustarAulasTexto: { fontWeight: 'bold', marginLeft: 5, color: '#000' },
   linhaPagamento: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#EEE' },
   modalDadoPagtoData: { fontSize: 16, fontWeight: 'bold' },
   modalDadoPagtoValor: { color: '#28a745', fontWeight: 'bold' },
