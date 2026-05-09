@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard } from 'react-native';
+// IMPORTANTE: Adicionamos o 'Image' aqui na importação do react-native
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
@@ -76,7 +77,6 @@ const Checkin = ({ navigation }) => {
 
         const aluno = resAluno.rows.item(0);
 
-        // Pega APENAS o último pagamento registrado (pelo ID, para garantir a ordem cronológica)
         tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [aluno.id], (_tx, resPag) => {
           
           let rawPagamento = '';
@@ -87,7 +87,6 @@ const Checkin = ({ navigation }) => {
             rawPagamento = resPag.rows.item(0).data_pagamento;
             timestampUltimoPagto = extrairData(rawPagamento);
             
-            // Garantimos que a hora do pagamento zere, para que check-ins da manhã no dia do pagamento contem.
             const dataBase = new Date(timestampUltimoPagto);
             inicioDoCiclo = new Date(dataBase.getFullYear(), dataBase.getMonth(), dataBase.getDate()).getTime();
           }
@@ -97,30 +96,15 @@ const Checkin = ({ navigation }) => {
           tx.executeSql(`SELECT data_hora FROM checkins WHERE aluno_id = ?`, [aluno.id], async (_tx2, resChk) => {
             let aulasUsadas = 0;
 
-            console.log("\n====== RAIO-X DO CHECKIN ======");
-            console.log(`Aluno: ${aluno.nome.split(' ')[0]} | Limite: ${aluno.lim_aulas}`);
-            console.log(`Último Pagamento RAW do Banco: "${rawPagamento}"`);
-            console.log(`Pagamento convertido (Timestamp): ${timestampUltimoPagto}`);
-            console.log(`Marco inicial do ciclo: ${new Date(inicioDoCiclo).toLocaleString()}`);
-            console.log("-------------------------------");
-
             for (let i = 0; i < resChk.rows.length; i++) {
               const rawChk = resChk.rows.item(i).data_hora;
               const timeChk = extrairData(rawChk);
               
-              let status = "Ignorado (Fora do Ciclo)";
-              // Se a data do check-in for maior ou igual ao início do dia do pagamento, ele conta!
               if (timeChk >= inicioDoCiclo && inicioDoCiclo > 0) {
                 aulasUsadas++;
-                status = "CONTADO!";
               }
-
-              console.log(`[Checkin ${i}] Banco: "${rawChk}" -> JS: ${new Date(timeChk).toLocaleString()} -> Ação: ${status}`);
             }
-            console.log(`Total Apurado de Aulas Usadas: ${aulasUsadas}`);
-            console.log("===============================\n");
 
-            // --- AVALIAÇÃO DE ACESSO ---
             const isAtivo = aluno.ativo === 1;
             const isNoPrazo = !ciclo.expirado;
             const temSaldo = aulasUsadas < aluno.lim_aulas;
@@ -136,9 +120,7 @@ const Checkin = ({ navigation }) => {
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
                     aluno.celular, 
-                    `Olá ${aluno.nome.split(' ')[0]}! \n
-                    Presença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\n
-                    Seu plano vence em ${ciclo.diasRestantes} dias.`
+                    `Olá ${aluno.nome.split(' ')[0]}! \nPresença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\nSeu plano vence em ${ciclo.diasRestantes} dias.`
                   );
                 }
 
@@ -166,16 +148,18 @@ const Checkin = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={styles.menuArea}>
-          <Icon name="menu" size={30} color="#E0E0E0" />
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.totemContainer}>
-        <View style={styles.logoCircle}><Icon name="sun" size={60} color="#FFD700" /></View>
-        <Text style={styles.title}>Espaço Girassol</Text>
-        <Text style={styles.subtitle}>Digite seu CPF para entrar</Text>
+        
+        {/* === LOGO DA EMPRESA AQUI === */}
+        {/* Ajuste o caminho '../assets/' dependendo de onde você salvou a imagem no projeto */}
+        <Image 
+          source={require('../assets/logoLeviare.jpeg')} 
+          style={styles.logoImage} 
+        />
+        {/* ============================ */}
+
+        <Text style={styles.title}>Espaço Leviare</Text>
+        <Text style={styles.subtitle}>Digite seu CPF para fazer o checkin:</Text>
 
         <TextInputMask
           type={'cpf'}
@@ -221,7 +205,15 @@ const styles = StyleSheet.create({
   header: { padding: 15 },
   menuArea: { padding: 10, opacity: 0.5 },
   totemContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, marginTop: -50 },
-  logoCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  
+  // Novo estilo do Logo
+  logoImage: { 
+    width: 150, 
+    height: 150, 
+    resizeMode: 'contain', // Impede que o logo fique achatado ou distorcido
+    marginBottom: 20 
+  },
+  
   title: { fontSize: 32, fontWeight: 'bold', color: '#000' },
   subtitle: { fontSize: 18, color: '#666', marginBottom: 40 },
   inputCpf: { width: '85%', maxWidth: 400, backgroundColor: '#F9F9F9', borderWidth: 2, borderColor: '#EEE', borderRadius: 15, padding: 20, fontSize: 28, textAlign: 'center', marginBottom: 30 },
