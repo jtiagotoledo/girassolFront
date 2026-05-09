@@ -5,9 +5,8 @@ import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
 import { imprimirTicketCheckin } from '../services/PrinterService';
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
+//import {verificarEExecutarBackupAutomatico} from '../services/BackupService'
 
-// --- MOTOR DE DATAS INFALÍVEL ---
-// Transforma qualquer formato do banco (DD/MM, YYYY-MM, com ou sem hora) em milissegundos reais
 const extrairData = (valorBanco) => {
   if (!valorBanco) return 0;
   const str = String(valorBanco).trim();
@@ -78,7 +77,7 @@ const Checkin = ({ navigation }) => {
         const aluno = resAluno.rows.item(0);
 
         // Pega APENAS o último pagamento registrado (pelo ID, para garantir a ordem cronológica)
-        tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [aluno.id], (_, resPag) => {
+        tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [aluno.id], (_tx, resPag) => {
           
           let rawPagamento = '';
           let timestampUltimoPagto = 0;
@@ -95,7 +94,7 @@ const Checkin = ({ navigation }) => {
 
           const ciclo = calcularCiclo(timestampUltimoPagto);
 
-          tx.executeSql(`SELECT data_hora FROM checkins WHERE aluno_id = ?`, [aluno.id], async (_, resChk) => {
+          tx.executeSql(`SELECT data_hora FROM checkins WHERE aluno_id = ?`, [aluno.id], async (_tx2, resChk) => {
             let aulasUsadas = 0;
 
             console.log("\n====== RAIO-X DO CHECKIN ======");
@@ -132,9 +131,15 @@ const Checkin = ({ navigation }) => {
                 const aulaAtual = aulasUsadas + 1;
 
                 imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
-                
+                //verificarEExecutarBackupAutomatico();
+
                 if (aluno.celular) {
-                  enviarMensagemWhatsapp(aluno.celular, `Olá ${aluno.nome.split(' ')[0]}! 🌻\nPresença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\nSeu plano vence em ${ciclo.diasRestantes} dias.`);
+                  enviarMensagemWhatsapp(
+                    aluno.celular, 
+                    `Olá ${aluno.nome.split(' ')[0]}! \n
+                    Presença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\n
+                    Seu plano vence em ${ciclo.diasRestantes} dias.`
+                  );
                 }
 
                 setStatusCheckin('sucesso');
