@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-import { imprimirTicketCheckin } from '../services/PrinterService';
+//import { imprimirTicketCheckin } from '../services/PrinterService';
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
 //import {verificarEExecutarBackupAutomatico} from '../services/BackupService'
 
@@ -114,7 +114,7 @@ const Checkin = ({ navigation }) => {
                 await registrarCheckin(aluno.id);
                 const aulaAtual = aulasUsadas + 1;
 
-                imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
+                //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
                 //verificarEExecutarBackupAutomatico();
 
                 if (aluno.celular) {
@@ -133,7 +133,7 @@ const Checkin = ({ navigation }) => {
             } else {
               let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Ciclo expirou em ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
-              imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
+              //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
             }
@@ -204,30 +204,76 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   header: { padding: 15 },
   menuArea: { padding: 10, opacity: 0.5 },
-  totemContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, marginTop: -50 },
   
-  // Novo estilo do Logo
+  // Retirei o marginTop negativo para centralizar perfeitamente na tela do tablet
+  totemContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  
+  // Logo bem maior e com mais espaço embaixo
   logoImage: { 
-    width: 150, 
-    height: 150, 
-    resizeMode: 'contain', // Impede que o logo fique achatado ou distorcido
-    marginBottom: 20 
+    width: 250, 
+    height: 250, 
+    resizeMode: 'contain', 
+    marginBottom: 30 
   },
   
-  title: { fontSize: 32, fontWeight: 'bold', color: '#000' },
-  subtitle: { fontSize: 18, color: '#666', marginBottom: 40 },
-  inputCpf: { width: '85%', maxWidth: 400, backgroundColor: '#F9F9F9', borderWidth: 2, borderColor: '#EEE', borderRadius: 15, padding: 20, fontSize: 28, textAlign: 'center', marginBottom: 30 },
-  btnConfirmar: { width: '85%', maxWidth: 400, padding: 20, borderRadius: 15, alignItems: 'center' },
-  btnConfirmarAtivo: { backgroundColor: '#FFD700' },
+  // Título maior e usando o Verde da Leviare
+  title: { 
+    fontSize: 46, 
+    fontWeight: 'bold', 
+    color: '#39624f', 
+    marginBottom: 10 
+  },
+  
+  // Subtítulo maior com um respiro grande antes do input
+  subtitle: { 
+    fontSize: 24, 
+    color: '#666', 
+    marginBottom: 50 
+  },
+  
+  // Input gigante, fácil de tocar, com números grandes
+  inputCpf: { 
+    width: '85%', 
+    maxWidth: 500, // Aumentei a largura máxima
+    backgroundColor: '#F9F9F9', 
+    borderWidth: 2, 
+    borderColor: '#DDD', 
+    borderRadius: 15, 
+    paddingVertical: 25, 
+    fontSize: 38, // Números bem maiores
+    textAlign: 'center', 
+    marginBottom: 40 // Espaço maior entre o input e o botão
+  },
+  
+  // Botão mais alto e largo
+  btnConfirmar: { 
+    width: '85%', 
+    maxWidth: 500, 
+    paddingVertical: 25, 
+    borderRadius: 15, 
+    alignItems: 'center',
+    elevation: 2 // Dá uma leve sombra no botão (Android)
+  },
+  
+  // Cores do botão: Verde escuro (Ativo) e Cinza (Inativo)
+  btnConfirmarAtivo: { backgroundColor: '#39624f' },
   btnConfirmarInativo: { backgroundColor: '#E0E0E0' },
-  btnConfirmarText: { fontWeight: 'bold', fontSize: 18, color: '#000' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#FFF', width: '85%', maxWidth: 450, borderRadius: 20, padding: 40, alignItems: 'center' },
-  iconContainer: { padding: 20, borderRadius: 50, marginBottom: 20 },
-  modalTitle: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
-  modalSub: { fontSize: 18, color: '#444', textAlign: 'center', lineHeight: 26 },
-  btnFecharErro: { marginTop: 30, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 10, backgroundColor: '#333' },
-  btnFecharErroText: { color: '#FFF', fontWeight: 'bold' }
-});
+  
+  // Texto do botão maior e usando o Bege da Leviare (se estiver ativo)
+  btnConfirmarText: { 
+    fontWeight: 'bold', 
+    fontSize: 22, 
+    color: '#e3dbc6', // Cor bege das letras da logo
+    letterSpacing: 1 
+  },
 
+  // --- Estilos do Modal de Feedback (Mantidos proporcionais) ---
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#FFF', width: '85%', maxWidth: 500, borderRadius: 20, padding: 50, alignItems: 'center' },
+  iconContainer: { padding: 25, borderRadius: 60, marginBottom: 25 },
+  modalTitle: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  modalSub: { fontSize: 22, color: '#444', textAlign: 'center', lineHeight: 32 },
+  btnFecharErro: { marginTop: 40, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 12, backgroundColor: '#333' },
+  btnFecharErroText: { color: '#FFF', fontWeight: 'bold', fontSize: 18 }
+});
 export default Checkin;
