@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { TextInputMask } from 'react-native-masked-text';
 import { cadastrarAluno, atualizarAluno } from '../database/Database';
-import Colors from '../style/Colors';
+import Colors from '../constants/colors';
 
 const CadastroAluno = ({ route, navigation }) => {
   const [form, setForm] = useState({

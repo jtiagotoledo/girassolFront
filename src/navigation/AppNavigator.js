@@ -4,7 +4,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 
-import Colors from '../style/Colors'; 
+import Colors from '../constants/colors'; 
 
 import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
