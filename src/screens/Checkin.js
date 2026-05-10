@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-// IMPORTANTE: Adicionamos o 'Image' aqui na importação do react-native
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-//import { imprimirTicketCheckin } from '../services/PrinterService';
+import { imprimirTicketCheckin } from '../services/PrinterService'; // <-- IMPORTAÇÃO DESCOMENTADA
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
-import {verificarEExecutarBackupAutomatico} from '../services/BackupService'
+import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
 
 const extrairData = (valorBanco) => {
   if (!valorBanco) return 0;
@@ -114,28 +113,30 @@ const Checkin = ({ navigation }) => {
                 await registrarCheckin(aluno.id);
                 const aulaAtual = aulasUsadas + 1;
 
-                //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
                 verificarEExecutarBackupAutomatico();
+
+                // <-- IMPRESSÃO DESCOMENTADA PARA SUCESSO -->
+                imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
 
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
                     aluno.celular, 
-                    `Olá ${aluno.nome.split(' ')[0]}! \n
-                    Presença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\n
-                    Seu plano vence em ${ciclo.diasRestantes} dias.`
+                    `Olá, ${aluno.nome.split(' ')[0]}.\nSua presença no Espaço Leviare foi confirmada com sucesso!\n\nResumo do seu plano:\n- Aula realizada: ${aulaAtual} de ${aluno.lim_aulas}\n- Último pagamento: ${ciclo.dataFormatada}`
                   );
                 }
 
                 setStatusCheckin('sucesso');
                 setMensagemFeedback({
                   titulo: `Olá, ${aluno.nome.split(' ')[0]}!`,
-                  motivo: `Aula ${aulaAtual} de ${aluno.lim_aulas}.\nPlano válido por mais ${ciclo.diasRestantes} dias.`
+                  motivo: `Aula ${aulaAtual} de ${aluno.lim_aulas}.\nÚltimo pagamento: ${ciclo.dataFormatada}`
                 });
               } catch (e) { Alert.alert("Erro", "Falha ao gravar entrada."); }
             } else {
               let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Ciclo expirou em ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
-              //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
+              // <-- IMPRESSÃO DESCOMENTADA PARA BLOQUEIO -->
+              imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
+              
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
             }
@@ -152,13 +153,10 @@ const Checkin = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.totemContainer}>
         
-        {/* === LOGO DA EMPRESA AQUI === */}
-        {/* Ajuste o caminho '../assets/' dependendo de onde você salvou a imagem no projeto */}
         <Image 
           source={require('../assets/logoLeviare.jpeg')} 
           style={styles.logoImage} 
         />
-        {/* ============================ */}
 
         <Text style={styles.title}>Espaço Leviare</Text>
         <Text style={styles.subtitle}>Digite seu CPF para fazer o checkin:</Text>
@@ -206,70 +204,52 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   header: { padding: 15 },
   menuArea: { padding: 10, opacity: 0.5 },
-  
-  // Retirei o marginTop negativo para centralizar perfeitamente na tela do tablet
   totemContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  
-  // Logo bem maior e com mais espaço embaixo
   logoImage: { 
     width: 250, 
     height: 250, 
     resizeMode: 'contain', 
     marginBottom: 30 
   },
-  
-  // Título maior e usando o Verde da Leviare
   title: { 
     fontSize: 46, 
     fontWeight: 'bold', 
     color: '#39624f', 
     marginBottom: 10 
   },
-  
-  // Subtítulo maior com um respiro grande antes do input
   subtitle: { 
     fontSize: 24, 
     color: '#666', 
     marginBottom: 50 
   },
-  
-  // Input gigante, fácil de tocar, com números grandes
   inputCpf: { 
     width: '85%', 
-    maxWidth: 500, // Aumentei a largura máxima
+    maxWidth: 500, 
     backgroundColor: '#F9F9F9', 
     borderWidth: 2, 
     borderColor: '#DDD', 
     borderRadius: 15, 
     paddingVertical: 25, 
-    fontSize: 38, // Números bem maiores
+    fontSize: 38, 
     textAlign: 'center', 
-    marginBottom: 40 // Espaço maior entre o input e o botão
+    marginBottom: 40 
   },
-  
-  // Botão mais alto e largo
   btnConfirmar: { 
     width: '85%', 
     maxWidth: 500, 
     paddingVertical: 25, 
     borderRadius: 15, 
     alignItems: 'center',
-    elevation: 2 // Dá uma leve sombra no botão (Android)
+    elevation: 2 
   },
-  
-  // Cores do botão: Verde escuro (Ativo) e Cinza (Inativo)
   btnConfirmarAtivo: { backgroundColor: '#39624f' },
   btnConfirmarInativo: { backgroundColor: '#E0E0E0' },
-  
-  // Texto do botão maior e usando o Bege da Leviare (se estiver ativo)
   btnConfirmarText: { 
     fontWeight: 'bold', 
     fontSize: 22, 
-    color: '#e3dbc6', // Cor bege das letras da logo
+    color: '#e3dbc6', 
     letterSpacing: 1 
   },
-
-  // --- Estilos do Modal de Feedback (Mantidos proporcionais) ---
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#FFF', width: '85%', maxWidth: 500, borderRadius: 20, padding: 50, alignItems: 'center' },
   iconContainer: { padding: 25, borderRadius: 60, marginBottom: 25 },
@@ -278,4 +258,5 @@ const styles = StyleSheet.create({
   btnFecharErro: { marginTop: 40, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 12, backgroundColor: '#333' },
   btnFecharErroText: { color: '#FFF', fontWeight: 'bold', fontSize: 18 }
 });
+
 export default Checkin;
