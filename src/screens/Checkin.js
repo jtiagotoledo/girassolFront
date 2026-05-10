@@ -6,7 +6,7 @@ import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
 //import { imprimirTicketCheckin } from '../services/PrinterService';
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
-//import {verificarEExecutarBackupAutomatico} from '../services/BackupService'
+import {verificarEExecutarBackupAutomatico} from '../services/BackupService'
 
 const extrairData = (valorBanco) => {
   if (!valorBanco) return 0;
@@ -115,7 +115,7 @@ const Checkin = ({ navigation }) => {
                 const aulaAtual = aulasUsadas + 1;
 
                 //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
-                //verificarEExecutarBackupAutomatico();
+                verificarEExecutarBackupAutomatico();
 
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
