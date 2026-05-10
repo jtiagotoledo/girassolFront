@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-import { imprimirTicketCheckin } from '../services/PrinterService'; // <-- IMPORTAÇÃO DESCOMENTADA
+//import { imprimirTicketCheckin } from '../services/PrinterService'; // <-- IMPORTAÇÃO DESCOMENTADA
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
 import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
 
@@ -116,7 +116,7 @@ const Checkin = ({ navigation }) => {
                 verificarEExecutarBackupAutomatico();
 
                 // <-- IMPRESSÃO DESCOMENTADA PARA SUCESSO -->
-                imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
+                //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
 
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
@@ -135,7 +135,7 @@ const Checkin = ({ navigation }) => {
               let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Ciclo expirou em ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
               // <-- IMPRESSÃO DESCOMENTADA PARA BLOQUEIO -->
-              imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
+              //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
               
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
