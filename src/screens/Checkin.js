@@ -120,7 +120,9 @@ const Checkin = ({ navigation }) => {
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
                     aluno.celular, 
-                    `Olá ${aluno.nome.split(' ')[0]}! \nPresença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\nSeu plano vence em ${ciclo.diasRestantes} dias.`
+                    `Olá ${aluno.nome.split(' ')[0]}! \n
+                    Presença confirmada: ${aulaAtual}/${aluno.lim_aulas}.\n
+                    Seu plano vence em ${ciclo.diasRestantes} dias.`
                   );
                 }
 

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { TextInputMask } from 'react-native-masked-text';
 import { cadastrarAluno, atualizarAluno } from '../database/Database';
+
+// IMPORTAÇÃO CORRETA DA PALETA DE CORES
 import Colors from '../constants/colors';
 
 const CadastroAluno = ({ route, navigation }) => {
@@ -90,11 +92,9 @@ const CadastroAluno = ({ route, navigation }) => {
     } catch (error) {
       console.log('Erro bruto recebido do banco:', error);
       
-      // Transforma o erro em string de forma segura, seja ele nulo, objeto ou texto
       const mensagemErro = error?.message || String(error) || "";
       console.log('mensagemErro', mensagemErro);
       
-      // Verifica se a mensagem contém a palavra UNIQUE (ignorando maiúsculas/minúsculas)
       if (mensagemErro.toLowerCase().includes("unique constraint failed") || mensagemErro.toLowerCase().includes("cpf")) {
         Alert.alert("Atenção", "Este CPF já está cadastrado no sistema.");
       } else {
@@ -123,7 +123,7 @@ const CadastroAluno = ({ route, navigation }) => {
           <TextInput
             style={styles.input}
             placeholder="Nome do aluno"
-            placeholderTextColor="#999"
+            placeholderTextColor={Colors.textLight}
             value={form.nome}
             onChangeText={(val) => setForm({ ...form, nome: val })}
           />
@@ -136,7 +136,7 @@ const CadastroAluno = ({ route, navigation }) => {
                 style={styles.input}
                 value={form.cpf}
                 placeholder="000.000.000-00"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 onChangeText={(val) => setForm({ ...form, cpf: val })}
               />
             </View>
@@ -148,7 +148,7 @@ const CadastroAluno = ({ route, navigation }) => {
                 style={styles.input}
                 value={form.data_nasc}
                 placeholder="DD/MM/AAAA"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 onChangeText={(val) => setForm({ ...form, data_nasc: val })}
               />
             </View>
@@ -167,7 +167,7 @@ const CadastroAluno = ({ route, navigation }) => {
                 style={styles.input}
                 value={form.celular}
                 placeholder="(00) 00000-0000"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 onChangeText={(val) => setForm({ ...form, celular: val })}
               />
             </View>
@@ -178,7 +178,7 @@ const CadastroAluno = ({ route, navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholder="aluno@email.com"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 value={form.email}
                 onChangeText={(val) => setForm({ ...form, email: val })}
               />
@@ -193,7 +193,7 @@ const CadastroAluno = ({ route, navigation }) => {
                 style={styles.input}
                 value={form.cep}
                 placeholder="00000-000"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 onChangeText={(val) => setForm({ ...form, cep: val })}
               />
             </View>
@@ -202,7 +202,7 @@ const CadastroAluno = ({ route, navigation }) => {
               <TextInput
                 style={[styles.input, { textTransform: 'uppercase' }]}
                 placeholder="Ex: SP"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 maxLength={2}
                 value={form.uf}
                 onChangeText={(val) => setForm({ ...form, uf: val })}
@@ -216,7 +216,7 @@ const CadastroAluno = ({ route, navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Rua..."
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 value={form.logradouro}
                 onChangeText={(val) => setForm({ ...form, logradouro: val })}
               />
@@ -226,7 +226,7 @@ const CadastroAluno = ({ route, navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="123 ou S/N"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 value={form.numero}
                 onChangeText={(val) => setForm({ ...form, numero: val })}
               />
@@ -237,7 +237,7 @@ const CadastroAluno = ({ route, navigation }) => {
           <TextInput
             style={styles.input}
             placeholder="Apto, Bloco, Casa 2..."
-            placeholderTextColor="#999"
+            placeholderTextColor={Colors.textLight}
             value={form.complemento}
             onChangeText={(val) => setForm({ ...form, complemento: val })}
           />
@@ -248,7 +248,7 @@ const CadastroAluno = ({ route, navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Bairro"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 value={form.bairro}
                 onChangeText={(val) => setForm({ ...form, bairro: val })}
               />
@@ -258,7 +258,7 @@ const CadastroAluno = ({ route, navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Cidade"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.textLight}
                 value={form.cidade}
                 onChangeText={(val) => setForm({ ...form, cidade: val })}
               />
@@ -286,9 +286,9 @@ const CadastroAluno = ({ route, navigation }) => {
               </Text>
             </View>
             <Switch
-              trackColor={{ false: "#767577", true: Colors.primary }}
-              thumbColor={form.ativo === 1 ? Colors.secondary : "#f4f3f4"} 
-              ios_backgroundColor="#3e3e3e"
+              trackColor={{ false: Colors.disabled, true: Colors.primary }}
+              thumbColor={form.ativo === 1 ? Colors.secondary : Colors.surface} 
+              ios_backgroundColor={Colors.disabled}
               onValueChange={(val) => setForm({ ...form, ativo: val ? 1 : 0 })}
               value={form.ativo === 1} 
             />
@@ -312,7 +312,7 @@ const CadastroAluno = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
+    backgroundColor: Colors.background
   },
   contentContainer: {
     padding: 20,
@@ -321,15 +321,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#000',
+    color: Colors.textPrimary,
     textAlign: 'center',
     marginVertical: 20
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
+    elevation: 2, // Sombra suave para o Android
   },
   sectionTitle: {
     color: Colors.primary,
@@ -343,32 +344,32 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    color: '#666',
+    color: Colors.textMuted,
     marginBottom: 4,
     fontWeight: '700'
   },
   input: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: Colors.surfaceLight,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     fontSize: 15,
     marginBottom: 15,
-    color: '#000',
+    color: Colors.textPrimary,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
   button: {
-    backgroundColor: '#000',
+    backgroundColor: Colors.primary,
     padding: 18,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10
   },
   buttonText: {
-    color: Colors.primary,
+    color: Colors.secondary,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 1
@@ -380,11 +381,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 15,
     borderTopWidth: 1,
-    borderTopColor: '#EEE'
+    borderTopColor: Colors.border
   },
   statusLabel: {
     fontSize: 11,
-    color: '#666',
+    color: Colors.textMuted,
     fontWeight: '700',
     marginBottom: 2
   },

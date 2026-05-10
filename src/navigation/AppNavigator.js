@@ -97,10 +97,10 @@ const AppNavigator = () => {
             width: 240,
           },
           headerShown: true, 
-          headerTitle: 'Girassol Pilates',
+          headerTitle: 'Espaço Leviare',
           headerTintColor: Colors.secondary,
           headerStyle: {
-            backgroundColor: Colors.surface,
+            backgroundColor: Colors.primary,
           },
           
           drawerActiveTintColor: Colors.secondary, 
