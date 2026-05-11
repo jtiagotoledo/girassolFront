@@ -252,8 +252,10 @@ const ListaAlunos = ({ navigation }) => {
     const isVencido = verificarVencimento(item.ultimo_pagamento);
     return (
       <TouchableOpacity style={[styles.card, item.ativo === 0 && styles.cardInativo]} onPress={() => abrirDetalhes(item)}>
+        {/* CORREÇÃO: flex: 1 adicionado aqui no estilo para limitar o tamanho do nome */}
         <View style={styles.infoClicavel}>
-          <Text style={styles.nome}>{item.nome}</Text>
+          {/* CORREÇÃO: numberOfLines={1} adicionado para reticências em nomes grandes */}
+          <Text style={styles.nome} numberOfLines={1} ellipsizeMode="tail">{item.nome}</Text>
           <Text style={styles.subtext}>CPF: {item.cpf}</Text>
         </View>
         <View style={styles.actionsBox}>
@@ -382,6 +384,9 @@ const ListaAlunos = ({ navigation }) => {
                   {alunoSelecionado.bairro && (
                     <Text style={styles.modalDado}>{alunoSelecionado.bairro} - {alunoSelecionado.cidade}/{alunoSelecionado.uf}</Text>
                   )}
+                  {alunoSelecionado.cep && (
+                    <Text style={styles.modalDado}>CEP: {alunoSelecionado.cep}</Text>
+                  )}
                 </View>
 
                 {/* PLANO E AULAS */}
@@ -450,6 +455,10 @@ const styles = StyleSheet.create({
   list: { padding: 15 },
   card: { backgroundColor: Colors.surface, padding: 20, borderRadius: 12, marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 },
   cardInativo: { opacity: 0.5 },
+  
+  // CORREÇÃO: Adicionado flex: 1 e marginRight para a caixa de informações
+  infoClicavel: { flex: 1, marginRight: 10 },
+  
   nome: { fontSize: 20, fontWeight: 'bold', color: Colors.textPrimary },
   subtext: { color: Colors.textMuted },
   actionsBox: { flexDirection: 'row', alignItems: 'center' },
@@ -477,13 +486,11 @@ const styles = StyleSheet.create({
   textBtnSave: { color: Colors.secondary, fontWeight: 'bold' },
   textBtnCancel: { color: Colors.textSecondary, fontWeight: 'bold' },
   
-  // Áreas destacadas (Aulas e Pagamentos)
   modalSectionDestacada: { marginTop: 15, backgroundColor: Colors.warningLight, padding: 15, borderRadius: 8 },
   linhaAulas: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   textoAulasDestaque: { fontSize: 28, fontWeight: 'bold', color: Colors.warning },
   subtextoAulas: { fontSize: 14, color: Colors.warning },
   
-  // Botão de ajustar (Substituindo o antigo Amarelo pelo padrão Verde/Bege)
   btnAjustarAulas: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
   btnAjustarAulasTexto: { fontWeight: 'bold', marginLeft: 5, color: Colors.secondary },
   
@@ -491,7 +498,6 @@ const styles = StyleSheet.create({
   modalDadoPagtoData: { fontSize: 16, fontWeight: 'bold', color: Colors.textPrimary },
   modalDadoPagtoValor: { color: Colors.success, fontWeight: 'bold' },
   
-  // Fechar Detalhes (Substituindo o antigo botão Preto com texto Amarelo)
   modalBtnFechar: { backgroundColor: Colors.primary, padding: 15, borderRadius: 8, marginTop: 20, alignItems: 'center' },
   modalBtnText: { color: Colors.secondary, fontWeight: 'bold', fontSize: 16 }
 });

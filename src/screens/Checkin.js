@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-//import { imprimirTicketCheckin } from '../services/PrinterService';
+import { imprimirTicketCheckin } from '../services/PrinterService';
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
 import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
 
@@ -56,13 +56,13 @@ const Checkin = ({ navigation }) => {
   const [statusCheckin, setStatusCheckin] = useState(null);
   const [mensagemFeedback, setMensagemFeedback] = useState({});
   
-  // NOVO: Estado para bloquear múltiplos cliques
+  // Estado para bloquear múltiplos cliques
   const [carregando, setCarregando] = useState(false);
   
-  // NOVO: Referência segura para o timer do modal
+  // Referência segura para o timer do modal
   const timeoutRef = useRef(null);
 
-  // NOVO: Limpa o timer da memória se o usuário mudar de tela antes do modal fechar
+  // Limpa o timer da memória se o usuário mudar de tela antes do modal fechar
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -131,12 +131,12 @@ const Checkin = ({ navigation }) => {
                 const aulaAtual = aulasUsadas + 1;
 
                 verificarEExecutarBackupAutomatico();
-                //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
+                imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
 
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
                     aluno.celular, 
-                    `Olá, ${aluno.nome.split(' ')[0]}! O Espaço Leviare agradece sua presença.\n\n✅ Check-in confirmado: Aula ${aulaAtual} de ${aluno.lim_aulas}\n🗓️ Último pagamento: ${ciclo.dataFormatada}`
+                    `Olá, ${aluno.nome.split(' ')[0]}! O Espaço Leviare agradece sua presença. \n\n✅ Check-in confirmado: Aula ${aulaAtual} de ${aluno.lim_aulas}\n🗓️ Último pagamento: ${ciclo.dataFormatada}`
                   );
                 }
 
@@ -151,6 +151,14 @@ const Checkin = ({ navigation }) => {
             } else {
               let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Pagamento em atraso, último pagamento: ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
+              // NOVO: Envio de WhatsApp para o aluno bloqueado
+              if (aluno.celular) {
+                enviarMensagemWhatsapp(
+                  aluno.celular, 
+                  `Olá, ${aluno.nome.split(' ')[0]}!\n\nHouve um bloqueio ao tentar realizar o seu check-in no Espaço Leviare.\n\n *Motivo:* ${motivo}\n\nPor favor, procure a recepção para regularizar o seu acesso. `
+                );
+              }
+
               //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
