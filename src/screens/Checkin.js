@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Keyboard, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 import db, { registrarCheckin } from '../database/Database';
-//import { imprimirTicketCheckin } from '../services/PrinterService'; // <-- IMPORTAÇÃO DESCOMENTADA
+//import { imprimirTicketCheckin } from '../services/PrinterService';
 import { enviarMensagemWhatsapp } from '../services/WhatsappService';
 import { verificarEExecutarBackupAutomatico } from '../services/BackupService';
 
@@ -27,7 +27,6 @@ const extrairData = (valorBanco) => {
   }
 };
 
-// Calcula a janela de 30 dias baseada no pagamento
 const calcularCiclo = (timestampMaximo) => {
   if (!timestampMaximo || timestampMaximo === 0) {
     return { expirado: true, diasRestantes: 0, dataFormatada: 'Não registrado' };
@@ -56,6 +55,27 @@ const Checkin = ({ navigation }) => {
   const [modalVisivel, setModalVisivel] = useState(false);
   const [statusCheckin, setStatusCheckin] = useState(null);
   const [mensagemFeedback, setMensagemFeedback] = useState({});
+  
+  // NOVO: Estado para bloquear múltiplos cliques
+  const [carregando, setCarregando] = useState(false);
+  
+  // NOVO: Referência segura para o timer do modal
+  const timeoutRef = useRef(null);
+
+  // NOVO: Limpa o timer da memória se o usuário mudar de tela antes do modal fechar
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const finalizarProcesso = () => {
+    timeoutRef.current = setTimeout(() => { 
+      setCpfDigitado(''); 
+      setModalVisivel(false); 
+      setCarregando(false); // Libera o botão novamente
+    }, 4000);
+  };
 
   const processarCheckin = () => {
     if (cpfDigitado.length !== 14) {
@@ -64,6 +84,7 @@ const Checkin = ({ navigation }) => {
     }
 
     Keyboard.dismiss();
+    setCarregando(true); // Bloqueia o botão IMEDIATAMENTE
 
     db.transaction((tx) => {
       tx.executeSql(`SELECT id, nome, celular, lim_aulas, ativo FROM alunos WHERE cpf = ?`, [cpfDigitado], (_, resAluno) => {
@@ -71,6 +92,7 @@ const Checkin = ({ navigation }) => {
           setStatusCheckin('erro');
           setMensagemFeedback({ titulo: "Erro", motivo: "CPF não encontrado." });
           setModalVisivel(true);
+          finalizarProcesso();
           return;
         }
 
@@ -78,14 +100,11 @@ const Checkin = ({ navigation }) => {
 
         tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [aluno.id], (_tx, resPag) => {
           
-          let rawPagamento = '';
           let timestampUltimoPagto = 0;
           let inicioDoCiclo = 0;
 
           if (resPag.rows.length > 0) {
-            rawPagamento = resPag.rows.item(0).data_pagamento;
-            timestampUltimoPagto = extrairData(rawPagamento);
-            
+            timestampUltimoPagto = extrairData(resPag.rows.item(0).data_pagamento);
             const dataBase = new Date(timestampUltimoPagto);
             inicioDoCiclo = new Date(dataBase.getFullYear(), dataBase.getMonth(), dataBase.getDate()).getTime();
           }
@@ -96,9 +115,7 @@ const Checkin = ({ navigation }) => {
             let aulasUsadas = 0;
 
             for (let i = 0; i < resChk.rows.length; i++) {
-              const rawChk = resChk.rows.item(i).data_hora;
-              const timeChk = extrairData(rawChk);
-              
+              const timeChk = extrairData(resChk.rows.item(i).data_hora);
               if (timeChk >= inicioDoCiclo && inicioDoCiclo > 0) {
                 aulasUsadas++;
               }
@@ -114,14 +131,12 @@ const Checkin = ({ navigation }) => {
                 const aulaAtual = aulasUsadas + 1;
 
                 verificarEExecutarBackupAutomatico();
-
-                // <-- IMPRESSÃO DESCOMENTADA PARA SUCESSO -->
                 //imprimirTicketCheckin(aluno.nome, `${aulaAtual} de ${aluno.lim_aulas}`, ciclo.dataFormatada);
 
                 if (aluno.celular) {
                   enviarMensagemWhatsapp(
                     aluno.celular, 
-                    `Olá, ${aluno.nome.split(' ')[0]}.\nSua presença no Espaço Leviare foi confirmada com sucesso!\n\nResumo do seu plano:\n- Aula realizada: ${aulaAtual} de ${aluno.lim_aulas}\n- Último pagamento: ${ciclo.dataFormatada}`
+                    `Olá, ${aluno.nome.split(' ')[0]}! O Espaço Leviare agradece sua presença.\n\n✅ Check-in confirmado: Aula ${aulaAtual} de ${aluno.lim_aulas}\n🗓️ Último pagamento: ${ciclo.dataFormatada}`
                   );
                 }
 
@@ -130,22 +145,25 @@ const Checkin = ({ navigation }) => {
                   titulo: `Olá, ${aluno.nome.split(' ')[0]}!`,
                   motivo: `Aula ${aulaAtual} de ${aluno.lim_aulas}.\nÚltimo pagamento: ${ciclo.dataFormatada}`
                 });
-              } catch (e) { Alert.alert("Erro", "Falha ao gravar entrada."); }
+              } catch (e) { 
+                Alert.alert("Erro", "Falha ao gravar entrada."); 
+              }
             } else {
-              let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Ciclo expirou em ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
+              let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Pagamento em atraso, último pagamento: ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
-              // <-- IMPRESSÃO DESCOMENTADA PARA BLOQUEIO -->
               //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
-              
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
             }
             
             setModalVisivel(true);
-            setTimeout(() => { setCpfDigitado(''); setModalVisivel(false); }, 4000);
+            finalizarProcesso();
           });
         });
-      }, (err) => console.log("Erro SQL:", err));
+      }, (err) => {
+        console.log("Erro SQL:", err);
+        setCarregando(false);
+      });
     });
   };
 
@@ -153,11 +171,7 @@ const Checkin = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.totemContainer}>
         
-        <Image 
-          source={require('../assets/logoLeviare.jpeg')} 
-          style={styles.logoImage} 
-        />
-
+        <Image source={require('../assets/logoLeviare.jpeg')} style={styles.logoImage} />
         <Text style={styles.title}>Espaço Leviare</Text>
         <Text style={styles.subtitle}>Digite seu CPF para fazer o checkin:</Text>
 
@@ -169,14 +183,20 @@ const Checkin = ({ navigation }) => {
           placeholder="000.000.000-00"
           placeholderTextColor="#CCC"
           keyboardType="numeric"
+          editable={!carregando} // Impede de digitar enquanto carrega
         />
 
         <TouchableOpacity 
-          style={[styles.btnConfirmar, cpfDigitado.length === 14 ? styles.btnConfirmarAtivo : styles.btnConfirmarInativo]}
+          style={[
+            styles.btnConfirmar, 
+            (cpfDigitado.length === 14 && !carregando) ? styles.btnConfirmarAtivo : styles.btnConfirmarInativo
+          ]}
           onPress={processarCheckin}
-          disabled={cpfDigitado.length !== 14}
+          disabled={cpfDigitado.length !== 14 || carregando}
         >
-          <Text style={styles.btnConfirmarText}>CONFIRMAR ENTRADA</Text>
+          <Text style={styles.btnConfirmarText}>
+            {carregando ? 'PROCESSANDO...' : 'CONFIRMAR ENTRADA'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -189,7 +209,7 @@ const Checkin = ({ navigation }) => {
             <Text style={[styles.modalTitle, { color: statusCheckin === 'sucesso' ? '#28a745' : '#FF3B30' }]}>{mensagemFeedback.titulo}</Text>
             <Text style={styles.modalSub}>{mensagemFeedback.motivo}</Text>
             {statusCheckin === 'erro' && (
-              <TouchableOpacity style={styles.btnFecharErro} onPress={() => { setModalVisivel(false); setCpfDigitado(''); }}>
+              <TouchableOpacity style={styles.btnFecharErro} onPress={() => { setModalVisivel(false); setCpfDigitado(''); setCarregando(false); }}>
                 <Text style={styles.btnFecharErroText}>VOLTAR</Text>
               </TouchableOpacity>
             )}
@@ -202,54 +222,22 @@ const Checkin = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
-  header: { padding: 15 },
-  menuArea: { padding: 10, opacity: 0.5 },
   totemContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  logoImage: { 
-    width: 250, 
-    height: 250, 
-    resizeMode: 'contain', 
-    marginBottom: 30 
-  },
-  title: { 
-    fontSize: 46, 
-    fontWeight: 'bold', 
-    color: '#39624f', 
-    marginBottom: 10 
-  },
-  subtitle: { 
-    fontSize: 24, 
-    color: '#666', 
-    marginBottom: 50 
-  },
+  logoImage: { width: 250, height: 250, resizeMode: 'contain', marginBottom: 30 },
+  title: { fontSize: 46, fontWeight: 'bold', color: '#39624f', marginBottom: 10 },
+  subtitle: { fontSize: 24, color: '#666', marginBottom: 50 },
   inputCpf: { 
-    width: '85%', 
-    maxWidth: 500, 
-    backgroundColor: '#F9F9F9', 
-    borderWidth: 2, 
-    borderColor: '#DDD', 
-    borderRadius: 15, 
-    paddingVertical: 25, 
-    fontSize: 38, 
-    textAlign: 'center', 
-    marginBottom: 40 
+    width: '85%', maxWidth: 500, backgroundColor: '#F9F9F9', 
+    borderWidth: 2, borderColor: '#DDD', borderRadius: 15, 
+    paddingVertical: 25, fontSize: 38, textAlign: 'center', marginBottom: 40 
   },
   btnConfirmar: { 
-    width: '85%', 
-    maxWidth: 500, 
-    paddingVertical: 25, 
-    borderRadius: 15, 
-    alignItems: 'center',
-    elevation: 2 
+    width: '85%', maxWidth: 500, paddingVertical: 25, 
+    borderRadius: 15, alignItems: 'center', elevation: 2 
   },
   btnConfirmarAtivo: { backgroundColor: '#39624f' },
   btnConfirmarInativo: { backgroundColor: '#E0E0E0' },
-  btnConfirmarText: { 
-    fontWeight: 'bold', 
-    fontSize: 22, 
-    color: '#e3dbc6', 
-    letterSpacing: 1 
-  },
+  btnConfirmarText: { fontWeight: 'bold', fontSize: 22, color: '#e3dbc6', letterSpacing: 1 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#FFF', width: '85%', maxWidth: 500, borderRadius: 20, padding: 50, alignItems: 'center' },
   iconContainer: { padding: 25, borderRadius: 60, marginBottom: 25 },
