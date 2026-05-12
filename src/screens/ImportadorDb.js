@@ -1008,7 +1008,7 @@ const ImportadorDB = () => {
       <Icon name="database" size={80} color="#007bff" style={{ marginBottom: 20 }} />
       <Text style={styles.title}>Carga Inicial do Sistema</Text>
       <Text style={styles.subtitle}>
-        Este módulo lerá o array de JSON embutido no código e fará o INSERT no SQLite em uma única transação de alta velocidade.
+        Este módulo lerá a lista de alunos embutido no código e fará a injeção inicial de dados no app.
       </Text>
 
       {carregando ? (
@@ -1019,9 +1019,7 @@ const ImportadorDB = () => {
         </TouchableOpacity>
       )}
 
-      <Text style={styles.warning}>
-        Após a mensagem de sucesso, desvincule esta tela do seu App.js.
-      </Text>
+      
     </View>
   );
 };

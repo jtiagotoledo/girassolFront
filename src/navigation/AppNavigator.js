@@ -9,6 +9,7 @@ import Colors from '../constants/colors';
 import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
 import CadastroAluno from '../screens/CadastroAluno';
+import ImportadorDb from '../screens/ImportadorDb';
 
 const Drawer = createDrawerNavigator();
 
@@ -41,7 +42,7 @@ const MenuButton = () => {
         onPress={() => setModalVisible(true)} 
         style={styles.menuButton}
       >
-        <Icon name="menu" size={30} color={Colors.secondary} />
+        <Icon name="menu" size={30} color={Colors.textPrimary} />
       </TouchableOpacity>
 
       <Modal
@@ -82,6 +83,8 @@ const MenuButton = () => {
   );
 };
 
+// ... (mantenha os seus imports e o MenuButton como estão)
+
 const AppNavigator = () => {
   return (
     <NavigationContainer>
@@ -89,22 +92,26 @@ const AppNavigator = () => {
         initialRouteName="Checkin"
         screenOptions={{
           swipeEnabled: false, 
-          
           drawerStyle: {
             backgroundColor: Colors.surface, 
-            width: 240,
+            width: 320, 
           },
           headerShown: true, 
           headerTitle: 'Espaço Leviare',
-          headerTintColor: Colors.secondary,
+          headerTintColor: Colors.textPrimary,
           headerStyle: {
-            backgroundColor: Colors.primary,
+            backgroundColor: Colors.surface,
+          },
+          
+          drawerLabelStyle: {
+            fontSize: 22,      
+            fontWeight: 'bold',
+            marginVertical: 5,
           },
           
           drawerActiveTintColor: Colors.secondary, 
           drawerActiveBackgroundColor: Colors.primary, 
           drawerInactiveTintColor: Colors.textLight, 
-          
           headerLeft: MenuButton, 
         }}
       >
@@ -121,12 +128,31 @@ const AppNavigator = () => {
         <Drawer.Screen 
           name="Cadastro" 
           component={CadastroAluno} 
-          options={{ title: 'Cadastrar Novo' }}
+          options={{ title: 'Cadastrar Aluno' }}
+        />
+
+        <Drawer.Screen 
+          name="Importador" 
+          component={ImportadorDb} 
+          options={{ 
+            title: 'Importar Alunos',
+            drawerItemStyle: { 
+              marginTop: 1000,           
+              borderTopWidth: 1,        
+              borderTopColor: Colors.border, 
+              paddingTop: 10
+            },
+            drawerLabelStyle: {
+              fontSize: 18,            
+              fontWeight: '600'
+            }
+          }}
         />
       </Drawer.Navigator>
     </NavigationContainer>
   );
 };
+
 
 const styles = StyleSheet.create({
   menuButton: {

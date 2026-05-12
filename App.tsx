@@ -5,7 +5,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // 1. Importe isso
 import { setupDatabase } from './src/database/Database';
 import AppNavigator from './src/navigation/AppNavigator';
-//import ImportadorDB from './src/screens/ImportadorDb';
 
 const App = () => {
   useEffect(() => {
@@ -17,7 +16,6 @@ const App = () => {
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" />
         <AppNavigator/>
-        {/* <ImportadorDB/> */}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
