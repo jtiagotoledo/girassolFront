@@ -1,19 +1,14 @@
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase(
-  { name: 'girassol_pilates.db', location: 'default' },
-  () => { console.log('Banco de dados conectado!'); },
-  error => { console.log('Erro ao conectar: ', error); }
+  { name: 'girassol_pilates.db', location: 'default' }
 );
 
 export const setupDatabase = () => {
-  // 1. LIGAR AS CHAVES ESTRANGEIRAS (Precisa rodar fora da transaction normal)
   db.executeSql('PRAGMA foreign_keys = ON;', [], () => {
-    console.log('Chaves Estrangeiras (Cascade) ATIVADAS!');
   });
 
   db.transaction((tx) => {
-    // Tabela de Alunos (Pai)
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS alunos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +29,6 @@ export const setupDatabase = () => {
       );`
     );
 
-    // Tabela de Check-ins (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS checkins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +38,6 @@ export const setupDatabase = () => {
       );`
     );
 
-    // Tabela de Pagamentos (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS pagamentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +55,6 @@ export default db;
 export const cadastrarAluno = (aluno) => {
   return new Promise((resolve, reject) => {
     db.transaction(
-      // 1. Bloco de Execução
       (tx) => {
         tx.executeSql(
           `INSERT INTO alunos (
@@ -73,23 +65,17 @@ export const cadastrarAluno = (aluno) => {
             aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
             aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
           ],
-          // SUCESSO
           (_, results) => { 
             resolve(results); 
           },
-          // ERRO NA QUERY
           (txObj, erroSql) => { 
-            // Algumas versões passam o erro no txObj, outras no erroSql. Vamos capturar os dois!
             const erroReal = erroSql || txObj;
-            console.log("❌ Erro capturado no executeSql:", erroReal);
             reject(erroReal); 
-            return true; // Cancela a transação
+            return true; 
           }
         );
       },
-      // 2. Erro na Transação (Fallback de segurança)
       (erroTransacao) => {
-        console.log("❌ Erro capturado na Transação:", erroTransacao);
         if (erroTransacao) reject(erroTransacao);
       }
     );
@@ -116,16 +102,13 @@ export const atualizarAluno = (id, aluno) => {
   });
 };
 
-// 2. FUNÇÃO DE DELETAR LIMPA (O Banco faz o resto)
 export const deletarAluno = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
-      // Basta deletar o aluno. O 'ON DELETE CASCADE' vai apagar os checkins e pagamentos dele sozinho!
       tx.executeSql(
         'DELETE FROM alunos WHERE id = ?',
         [id],
         (_, results) => {
-          console.log("Aluno e todo o seu histórico deletados com sucesso via CASCADE.");
           resolve(results);
         },
         (_, error) => { reject(error); }
@@ -133,10 +116,6 @@ export const deletarAluno = (id) => {
     });
   });
 };
-
-// ==========================================
-// --- FUNÇÕES FINANCEIRAS ---
-// ==========================================
 
 export const registrarPagamento = (aluno_id, data_pagamento, valor = 0) => {
   return new Promise((resolve, reject) => {
@@ -170,7 +149,6 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
   });
 };
 
-// Excluir um pagamento específico
 export const deletarPagamento = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
@@ -184,7 +162,6 @@ export const deletarPagamento = (id) => {
   });
 };
 
-// Editar um pagamento existente
 export const atualizarPagamento = (id, data, valor) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {

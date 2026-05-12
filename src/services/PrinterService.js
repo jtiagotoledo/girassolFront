@@ -1,4 +1,3 @@
-// src/services/PrinterService.js
 import ThermalPrinterModule from 'react-native-thermal-printer';
 
 export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdicional) => {
@@ -10,7 +9,6 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
     const nomeSeguro = nomeCompleto || "Aluno";
     const nomeCurto = nomeSeguro.split(' ').slice(0, 2).join(' ');
 
-    // Detecta se é erro/bloqueio pela string enviada no checkin
     const infoStr = String(infoPrincipal);
     const isErro = infoStr.includes("PAGTO:") || infoStr === "ERRO";
 
@@ -22,10 +20,8 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       `[L]Aluno(a): ${nomeCurto}\n` +
       `[L]Data: ${dataFormatada} as ${horaFormatada}\n` +
       
-      // Linha de Aula ou Info de Erro
       `[L]${isErro ? infoStr : 'Aula: ' + infoStr}\n` +
       
-      // Linha Adicional: Mostra Motivo (se erro) ou Último Pagamento (se sucesso)
       `[L]${isErro ? '<b>Motivo: ' + dadoAdicional + '</b>' : 'Ult. Pagamento: ' + dadoAdicional}\n` +
       
       `\n` +
@@ -43,7 +39,6 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       autoCut: true, 
     });
 
-    console.log("✅ Ticket impresso com data de pagamento!");
     return true;
 
   } catch (error) {

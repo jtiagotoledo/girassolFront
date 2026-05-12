@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import db from '../database/Database'; // Confirme se o caminho do seu banco está correto aqui
+import db from '../database/Database'; 
 
 const ALUNOS_CARGA_INICIAL = 
 [
@@ -965,7 +965,6 @@ const ImportadorDB = () => {
     db.transaction((tx) => {
       ALUNOS_CARGA_INICIAL.forEach((aluno) => {
         
-        // Ignora caso exista alguma linha em branco perdida no JSON
         if (!aluno.cpf) return;
 
         tx.executeSql(
@@ -986,8 +985,7 @@ const ImportadorDB = () => {
             aluno.cep || null, 
             parseInt(aluno.lim_aulas) || 0
           ],
-          () => { /* Sucesso silencioso para não travar o loop */ },
-          (_, err) => { console.log(`Erro ao inserir ${aluno.nome}:`, err.message); }
+          () => {  },
         );
       });
     }, 
@@ -996,7 +994,6 @@ const ImportadorDB = () => {
       Alert.alert("Erro fatal", "A transação falhou: " + error.message);
     }, 
     () => {
-      // Callback de Sucesso Geral da Transação
       setCarregando(false);
       Alert.alert(
         "Missão Cumprida! 🚀", 
@@ -1052,7 +1049,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   btnInjetar: {
-    backgroundColor: '#FF3B30', // Vermelho para dar cara de "ação irreversível"
+    backgroundColor: '#FF3B30', 
     paddingVertical: 18,
     paddingHorizontal: 30,
     borderRadius: 12,

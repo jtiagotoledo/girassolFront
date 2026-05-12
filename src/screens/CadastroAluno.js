@@ -49,9 +49,6 @@ const CadastroAluno = ({ route, navigation }) => {
       return;
     }
 
-    // CORREÇÃO: Removida a limpeza de máscara. 
-    // Voltamos a enviar o 'form' diretamente para o banco para garantir
-    // que o CPF seja salvo com os pontos e traço (necessário para o Checkin.js).
     try {
       if (alunoEditavel) {
         await atualizarAluno(alunoEditavel.id, form);

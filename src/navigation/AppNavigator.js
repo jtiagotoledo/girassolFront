@@ -12,10 +12,8 @@ import CadastroAluno from '../screens/CadastroAluno';
 
 const Drawer = createDrawerNavigator();
 
-// --- SENHA DE ACESSO AO MENU ---
-const SENHA_ADMIN = '2503'; // Você pode alterar essa senha!
+const SENHA_ADMIN = '2503'; 
 
-// Componente do Botão de Menu
 const MenuButton = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
@@ -203,7 +201,7 @@ const styles = StyleSheet.create({
   btnTextConfirmar: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: Colors.secondary, // Usando o bege/creme da Leviare para contraste perfeito com o verde escuro!
+    color: Colors.secondary,
   }
 });
 

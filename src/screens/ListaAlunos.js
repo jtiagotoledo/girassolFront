@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, S
 import Icon from 'react-native-vector-icons/Feather';
 import { TextInputMask } from 'react-native-masked-text';
 
-// IMPORTAÇÃO DA PALETA DE CORES
 import Colors from '../constants/colors';
 
 import db, { 
@@ -14,7 +13,6 @@ import db, {
   atualizarPagamento   
 } from '../database/Database';
 
-// --- FUNÇÕES AUXILIARES ---
 const formatarParaTela = (dataISO) => {
   if (!dataISO) return null;
   return dataISO.split('-').reverse().join('/');
@@ -41,7 +39,6 @@ const obterDataHoraAtualBanco = () => {
   return `${data} ${hora}`;
 };
 
-// Motor de datas à prova de falhas do SQLite
 const extrairData = (valorBanco) => {
   if (!valorBanco) return 0;
   const str = String(valorBanco).trim();
@@ -66,19 +63,16 @@ const ListaAlunos = ({ navigation }) => {
   const [busca, setBusca] = useState('');
   const [apenasAtivos, setApenasAtivos] = useState(true);
 
-  // Estados dos Modais
   const [modalVisivel, setModalVisivel] = useState(false);
   const [alunoSelecionado, setAlunoSelecionado] = useState(null);
   const [historicoPagamentos, setHistoricoPagamentos] = useState([]);
   const [modalPagamentoVisivel, setModalPagamentoVisivel] = useState(false);
   
-  // Estados para Registro/Edição de Pagamento
   const [alunoPagamento, setAlunoPagamento] = useState(null);
   const [dataPagamentoInput, setDataPagamentoInput] = useState('');
   const [valorPagamentoInput, setValorPagamentoInput] = useState('0,00');
   const [idPagamentoEdicao, setIdPagamentoEdicao] = useState(null);
 
-  // Estados para Ajuste de Aulas
   const [aulasUsadas, setAulasUsadas] = useState(0);
   const [checkinsCicloAtual, setCheckinsCicloAtual] = useState([]);
   const [modalAjusteVisivel, setModalAjusteVisivel] = useState(false);
@@ -112,7 +106,6 @@ const ListaAlunos = ({ navigation }) => {
     setAlunosFiltrados(lista);
   }, [busca, apenasAtivos, alunos]);
 
-  // --- LÓGICA DE AULAS ---
   const carregarAulasDoCiclo = (alunoId) => {
     db.transaction(tx => {
       tx.executeSql(`SELECT data_pagamento FROM pagamentos WHERE aluno_id = ? ORDER BY id DESC LIMIT 1`, [alunoId], (_, resPag) => {
@@ -177,7 +170,6 @@ const ListaAlunos = ({ navigation }) => {
     });
   };
 
-  // --- FUNÇÕES DE AÇÃO ---
   const confirmarExclusaoAluno = (id, nome) => {
     Alert.alert("Excluir Aluno", `Deseja apagar o cadastro de ${nome}?`, [
       { text: "Cancelar" },
@@ -252,9 +244,7 @@ const ListaAlunos = ({ navigation }) => {
     const isVencido = verificarVencimento(item.ultimo_pagamento);
     return (
       <TouchableOpacity style={[styles.card, item.ativo === 0 && styles.cardInativo]} onPress={() => abrirDetalhes(item)}>
-        {/* CORREÇÃO: flex: 1 adicionado aqui no estilo para limitar o tamanho do nome */}
         <View style={styles.infoClicavel}>
-          {/* CORREÇÃO: numberOfLines={1} adicionado para reticências em nomes grandes */}
           <Text style={styles.nome} numberOfLines={1} ellipsizeMode="tail">{item.nome}</Text>
           <Text style={styles.subtext}>CPF: {item.cpf}</Text>
         </View>
@@ -308,7 +298,6 @@ const ListaAlunos = ({ navigation }) => {
 
       <FlatList data={alunosFiltrados} keyExtractor={item => item.id.toString()} renderItem={renderItem} contentContainerStyle={styles.list} />
 
-      {/* MODAL REGISTRO/EDICAO PAGAMENTO */}
       <Modal visible={modalPagamentoVisivel} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentSmall}>
@@ -325,7 +314,6 @@ const ListaAlunos = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* MODAL AJUSTE DE AULAS */}
       <Modal visible={modalAjusteVisivel} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentSmall}>
@@ -349,7 +337,6 @@ const ListaAlunos = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* MODAL DETALHES COMPLETO */}
       <Modal visible={modalVisivel} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -362,7 +349,6 @@ const ListaAlunos = ({ navigation }) => {
                   </Text>
                 </View>
 
-                {/* DADOS PESSOAIS */}
                 <View style={styles.modalSection}>
                   <Text style={styles.modalLabel}>CPF</Text>
                   <Text style={styles.modalDado}>{alunoSelecionado.cpf}</Text>
@@ -374,7 +360,6 @@ const ListaAlunos = ({ navigation }) => {
                   <Text style={styles.modalDado}>{alunoSelecionado.email || 'Não informado'}</Text>
                 </View>
 
-                {/* ENDEREÇO */}
                 <View style={styles.modalSection}>
                   <Text style={styles.modalLabel}>ENDEREÇO</Text>
                   <Text style={styles.modalDado}>
@@ -389,7 +374,6 @@ const ListaAlunos = ({ navigation }) => {
                   )}
                 </View>
 
-                {/* PLANO E AULAS */}
                 <View style={styles.modalSectionDestacada}>
                   <Text style={[styles.modalLabel, { color: Colors.warning }]}>CONSUMO DO PLANO ATUAL</Text>
                   <View style={styles.linhaAulas}>
@@ -410,7 +394,6 @@ const ListaAlunos = ({ navigation }) => {
                   </View>
                 </View>
 
-                {/* HISTÓRICO FINANCEIRO EDITÁVEL */}
                 <View style={styles.modalSectionDestacada}>
                   <Text style={[styles.modalLabel, { color: Colors.textPrimary }]}>HISTÓRICO DE PAGAMENTOS</Text>
                   {historicoPagamentos.map((pag, i) => (
@@ -456,7 +439,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: Colors.surface, padding: 20, borderRadius: 12, marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 },
   cardInativo: { opacity: 0.5 },
   
-  // CORREÇÃO: Adicionado flex: 1 e marginRight para a caixa de informações
   infoClicavel: { flex: 1, marginRight: 10 },
   
   nome: { fontSize: 20, fontWeight: 'bold', color: Colors.textPrimary },

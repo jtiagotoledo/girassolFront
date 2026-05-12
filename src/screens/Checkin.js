@@ -56,13 +56,10 @@ const Checkin = ({ navigation }) => {
   const [statusCheckin, setStatusCheckin] = useState(null);
   const [mensagemFeedback, setMensagemFeedback] = useState({});
   
-  // Estado para bloquear múltiplos cliques
   const [carregando, setCarregando] = useState(false);
   
-  // Referência segura para o timer do modal
   const timeoutRef = useRef(null);
 
-  // Limpa o timer da memória se o usuário mudar de tela antes do modal fechar
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -73,7 +70,7 @@ const Checkin = ({ navigation }) => {
     timeoutRef.current = setTimeout(() => { 
       setCpfDigitado(''); 
       setModalVisivel(false); 
-      setCarregando(false); // Libera o botão novamente
+      setCarregando(false); 
     }, 4000);
   };
 
@@ -84,7 +81,7 @@ const Checkin = ({ navigation }) => {
     }
 
     Keyboard.dismiss();
-    setCarregando(true); // Bloqueia o botão IMEDIATAMENTE
+    setCarregando(true); 
 
     db.transaction((tx) => {
       tx.executeSql(`SELECT id, nome, celular, lim_aulas, ativo FROM alunos WHERE cpf = ?`, [cpfDigitado], (_, resAluno) => {
@@ -151,7 +148,6 @@ const Checkin = ({ navigation }) => {
             } else {
               let motivo = !isAtivo ? "Matrícula Inativa." : !isNoPrazo ? `Pagamento em atraso, último pagamento: ${ciclo.dataFormatada}.` : `Limite de ${aluno.lim_aulas} aulas atingido.`;
               
-              // NOVO: Envio de WhatsApp para o aluno bloqueado
               if (aluno.celular) {
                 enviarMensagemWhatsapp(
                   aluno.celular, 
@@ -159,7 +155,6 @@ const Checkin = ({ navigation }) => {
                 );
               }
 
-              //imprimirTicketCheckin(aluno.nome, "BLOQUEADO", motivo);
               setStatusCheckin('erro');
               setMensagemFeedback({ titulo: "Acesso Bloqueado", motivo: `${motivo}\nProcure a recepção.` });
             }
@@ -169,7 +164,6 @@ const Checkin = ({ navigation }) => {
           });
         });
       }, (err) => {
-        console.log("Erro SQL:", err);
         setCarregando(false);
       });
     });
@@ -191,7 +185,7 @@ const Checkin = ({ navigation }) => {
           placeholder="000.000.000-00"
           placeholderTextColor="#CCC"
           keyboardType="numeric"
-          editable={!carregando} // Impede de digitar enquanto carrega
+          editable={!carregando} 
         />
 
         <TouchableOpacity 
