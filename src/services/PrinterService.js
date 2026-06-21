@@ -38,7 +38,7 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
 
     for (let i = 0; i < vias; i++) {
       await ThermalPrinterModule.printTcp({
-        ip: '192.168.15.200', 
+        ip: '192.168.0.200', 
         port: 9100,
         timeout: 5000,
         payload: layoutRecibo,
@@ -90,7 +90,7 @@ export const imprimirRelatorioDiario = async (dataFormatada, listaCheckins, tota
       `[L].\n`;
 
     await ThermalPrinterModule.printTcp({
-      ip: '192.168.15.200', 
+      ip: '192.168.0.200', 
       port: 9100,
       timeout: 5000,
       payload: layoutRelatorio,
