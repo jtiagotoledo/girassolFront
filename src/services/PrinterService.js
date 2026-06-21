@@ -57,3 +57,50 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
     return false;
   }
 };
+
+export const imprimirRelatorioDiario = async (dataFormatada, listaCheckins, total) => {
+  try {
+    let layoutRelatorio = 
+      `[C]<b>ESPAÇO LEVIARE</b>\n` +
+      `[C]--------------------------------\n` +
+      `[C]<b>RELATORIO DE CHECK-INS</b>\n` +
+      `[C]Data: ${dataFormatada}\n` +
+      `[L]\n` +
+      `[L]<b>HORA  | ALUNO</b>\n` +
+      `[C]--------------------------------\n`;
+
+    if (listaCheckins.length === 0) {
+      layoutRelatorio += `[C]Nenhum check-in registrado\n`;
+    } else {
+      listaCheckins.forEach(item => {
+        const horaStr = item.data_hora.split(' ')[1].substring(0, 5); 
+        const nomeCurto = item.nome.split(' ').slice(0, 2).join(' ').substring(0, 22); 
+        
+        layoutRelatorio += `[L]${horaStr} | ${nomeCurto}\n`;
+      });
+    }
+
+    layoutRelatorio += 
+      `[C]--------------------------------\n` +
+      `[L]\n` +
+      `[C]<b>TOTAL DE ACESSOS: ${total}</b>\n` +
+      `[L]\n` +
+      `[L]\n` +
+      `[L]\n` +
+      `[L].\n`;
+
+    await ThermalPrinterModule.printTcp({
+      ip: '192.168.15.200', 
+      port: 9100,
+      timeout: 5000,
+      payload: layoutRelatorio,
+      autoCut: true, 
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error("❌ Erro ao imprimir relatório:", error);
+    return false;
+  }
+};

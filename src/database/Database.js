@@ -208,3 +208,26 @@ export const atualizarObservacaoAluno = (id, texto) => {
     });
   });
 };
+
+export const buscarCheckinsPorData = (dataBase) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `SELECT c.id, c.data_hora, a.nome
+         FROM checkins c
+         INNER JOIN alunos a ON c.aluno_id = a.id
+         WHERE c.data_hora LIKE ?
+         ORDER BY c.data_hora DESC`,
+        [`${dataBase}%`],
+        (_, results) => {
+          let lista = [];
+          for (let i = 0; i < results.rows.length; i++) {
+            lista.push(results.rows.item(i));
+          }
+          resolve(lista);
+        },
+        (_, error) => { reject(error); }
+      );
+    });
+  });
+};

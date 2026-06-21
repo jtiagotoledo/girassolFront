@@ -10,8 +10,8 @@ import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
 import CadastroAluno from '../screens/CadastroAluno';
 import ImportadorDb from '../screens/ImportadorDb';
-// Importação da nova tela de configurações
 import Configuracoes from '../screens/Configuracoes';
+import RelatorioDiario from '../screens/RelatorioDiario';
 
 const Drawer = createDrawerNavigator();
 
@@ -125,6 +125,14 @@ const AppNavigator = () => {
           component={ListaAlunos} 
           options={{ title: 'Gestão de Alunos' }}
         />
+
+        {/* --- NOVA TELA DO RELATÓRIO --- */}
+        <Drawer.Screen 
+          name="Relatorio" 
+          component={RelatorioDiario} 
+          options={{ title: 'Relatório Diário' }}
+        />
+        
         <Drawer.Screen 
           name="Cadastro" 
           component={CadastroAluno} 
@@ -136,7 +144,7 @@ const AppNavigator = () => {
           name="Configuracoes" 
           component={Configuracoes} 
           options={{ 
-            title: '⚙️ Configurações',
+            title: 'Configurações',
             drawerItemStyle: { 
               marginTop: 100, // Espaço em branco para separar das funções diárias
               borderTopWidth: 1,        
