@@ -217,7 +217,7 @@ export const buscarCheckinsPorData = (dataBase) => {
          FROM checkins c
          INNER JOIN alunos a ON c.aluno_id = a.id
          WHERE c.data_hora LIKE ?
-         ORDER BY c.data_hora DESC`,
+         ORDER BY c.data_hora ASC`,
         [`${dataBase}%`],
         (_, results) => {
           let lista = [];
