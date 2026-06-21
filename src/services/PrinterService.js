@@ -1,4 +1,5 @@
 import ThermalPrinterModule from 'react-native-thermal-printer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdicional) => {
   try {
@@ -31,13 +32,23 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       `[L]\n` +
       `[L].\n`;
 
-    await ThermalPrinterModule.printTcp({
-      ip: '192.168.0.200', 
-      port: 9100,
-      timeout: 5000,
-      payload: layoutRecibo,
-      autoCut: true, 
-    });
+    const duplicarTicket = await AsyncStorage.getItem('@imprimir_duplo');
+    
+    const vias = duplicarTicket === 'true' ? 2 : 1;
+
+    for (let i = 0; i < vias; i++) {
+      await ThermalPrinterModule.printTcp({
+        ip: '192.168.15.200', 
+        port: 9100,
+        timeout: 5000,
+        payload: layoutRecibo,
+        autoCut: true, 
+      });
+      
+      if (vias > 1 && i === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     return true;
 

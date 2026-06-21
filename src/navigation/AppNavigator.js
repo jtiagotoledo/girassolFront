@@ -10,6 +10,8 @@ import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
 import CadastroAluno from '../screens/CadastroAluno';
 import ImportadorDb from '../screens/ImportadorDb';
+// Importação da nova tela de configurações
+import Configuracoes from '../screens/Configuracoes';
 
 const Drawer = createDrawerNavigator();
 
@@ -83,8 +85,6 @@ const MenuButton = () => {
   );
 };
 
-// ... (mantenha os seus imports e o MenuButton como estão)
-
 const AppNavigator = () => {
   return (
     <NavigationContainer>
@@ -131,20 +131,31 @@ const AppNavigator = () => {
           options={{ title: 'Cadastrar Aluno' }}
         />
 
+        {/* --- NOVA TELA DE CONFIGURAÇÕES ISOLADA --- */}
+        <Drawer.Screen 
+          name="Configuracoes" 
+          component={Configuracoes} 
+          options={{ 
+            title: '⚙️ Configurações',
+            drawerItemStyle: { 
+              marginTop: 100, // Espaço em branco para separar das funções diárias
+              borderTopWidth: 1,        
+              borderTopColor: Colors.border, 
+              paddingTop: 10
+            }
+          }}
+        />
+
+        {/* --- IMPORTADOR --- */}
         <Drawer.Screen 
           name="Importador" 
           component={ImportadorDb} 
           options={{ 
             title: 'Importar Alunos',
-            drawerItemStyle: { 
-              marginTop: 1000,           
-              borderTopWidth: 1,        
-              borderTopColor: Colors.border, 
-              paddingTop: 10
-            },
             drawerLabelStyle: {
               fontSize: 18,            
-              fontWeight: '600'
+              fontWeight: '600',
+              color: '#FF3B30' // Texto vermelho para destacar alerta
             }
           }}
         />
@@ -152,7 +163,6 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
-
 
 const styles = StyleSheet.create({
   menuButton: {
