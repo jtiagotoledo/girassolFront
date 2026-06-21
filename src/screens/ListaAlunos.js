@@ -10,7 +10,8 @@ import db, {
   registrarPagamento, 
   buscarHistoricoPagamentos,
   deletarPagamento,    
-  atualizarPagamento   
+  atualizarPagamento,
+  atualizarObservacaoAluno 
 } from '../database/Database';
 
 const formatarParaTela = (dataISO) => {
@@ -24,7 +25,7 @@ const verificarVencimento = (dataISO) => {
   const dataPagto = new Date(dataISO + 'T00:00:00');
   const diffTime = Math.abs(hoje - dataPagto);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 30;
+  return diffDays > 40; 
 };
 
 const obterDataHojeISO = () => {
@@ -77,6 +78,8 @@ const ListaAlunos = ({ navigation }) => {
   const [checkinsCicloAtual, setCheckinsCicloAtual] = useState([]);
   const [modalAjusteVisivel, setModalAjusteVisivel] = useState(false);
   const [inputAulas, setInputAulas] = useState('0');
+  
+  const [observacaoInput, setObservacaoInput] = useState('');
 
   const carregarAlunos = () => {
     db.transaction((tx) => {
@@ -221,10 +224,22 @@ const ListaAlunos = ({ navigation }) => {
 
   const abrirDetalhes = async (aluno) => {
     setAlunoSelecionado(aluno);
+    setObservacaoInput(aluno.observacao || ''); 
     setModalVisivel(true);
     carregarAulasDoCiclo(aluno.id);
     const hist = await buscarHistoricoPagamentos(aluno.id);
     setHistoricoPagamentos(hist);
+  };
+
+  const salvarObservacao = async () => {
+    try {
+      await atualizarObservacaoAluno(alunoSelecionado.id, observacaoInput);
+      setAlunoSelecionado({ ...alunoSelecionado, observacao: observacaoInput });
+      carregarAlunos(); 
+      Alert.alert("Sucesso", "Observação salva com sucesso!");
+    } catch (e) {
+      Alert.alert("Erro", "Falha ao salvar a observação.");
+    }
   };
 
   const confirmarExclusaoPagto = (id) => {
@@ -374,6 +389,22 @@ const ListaAlunos = ({ navigation }) => {
                   )}
                 </View>
 
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalLabel}>OBSERVAÇÕES (Lesões, Notas, etc)</Text>
+                  <TextInput
+                    style={styles.inputObservacao}
+                    multiline={true}
+                    numberOfLines={3}
+                    value={observacaoInput}
+                    onChangeText={setObservacaoInput}
+                    placeholder="Digite uma nota curta sobre o aluno..."
+                    placeholderTextColor={Colors.textLight}
+                  />
+                  <TouchableOpacity style={styles.btnSalvarObs} onPress={salvarObservacao}>
+                    <Text style={styles.btnSalvarObsText}>Salvar Observação</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <View style={styles.modalSectionDestacada}>
                   <Text style={[styles.modalLabel, { color: Colors.warning }]}>CONSUMO DO PLANO ATUAL</Text>
                   <View style={styles.linhaAulas}>
@@ -468,6 +499,28 @@ const styles = StyleSheet.create({
   textBtnSave: { color: Colors.secondary, fontWeight: 'bold' },
   textBtnCancel: { color: Colors.textSecondary, fontWeight: 'bold' },
   
+  // <--- NOVOS ESTILOS PARA AS OBSERVAÇÕES --->
+  inputObservacao: { 
+    backgroundColor: Colors.inputBackground, 
+    color: Colors.textPrimary, 
+    padding: 15, 
+    borderRadius: 8, 
+    marginBottom: 10, 
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top' 
+  },
+  btnSalvarObs: { 
+    backgroundColor: Colors.info,
+    padding: 10, 
+    borderRadius: 8, 
+    alignItems: 'center' 
+  },
+  btnSalvarObsText: { 
+    color: Colors.surface, 
+    fontWeight: 'bold' 
+  },
+
   modalSectionDestacada: { marginTop: 15, backgroundColor: Colors.warningLight, padding: 15, borderRadius: 8 },
   linhaAulas: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   textoAulasDestaque: { fontSize: 28, fontWeight: 'bold', color: Colors.warning },

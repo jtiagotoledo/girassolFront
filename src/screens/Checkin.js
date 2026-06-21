@@ -44,8 +44,8 @@ const calcularCiclo = (timestampMaximo) => {
   const mes = String(dataPagto.getMonth() + 1).padStart(2, '0');
   
   return {
-    expirado: diffDays >= 30,
-    diasRestantes: Math.max(0, 30 - diffDays),
+    expirado: diffDays >= 40, 
+    diasRestantes: Math.max(0, 40 - diffDays), 
     dataFormatada: `${dia}/${mes}/${dataPagto.getFullYear()}`
   };
 };

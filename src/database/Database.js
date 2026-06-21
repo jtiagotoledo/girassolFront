@@ -47,6 +47,10 @@ export const setupDatabase = () => {
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );`
     );
+    tx.executeSql("ALTER TABLE alunos ADD COLUMN observacao TEXT DEFAULT ''", [],
+      () => { console.log("Coluna observacao adicionada"); },
+      (tx, err) => {  }
+    );
   });
 };
 
@@ -59,19 +63,19 @@ export const cadastrarAluno = (aluno) => {
         tx.executeSql(
           `INSERT INTO alunos (
             nome, cpf, data_nasc, email, celular, logradouro, numero, complemento, bairro, cidade, uf, cep, lim_aulas, ativo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
             aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
-            aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
+            aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1
           ],
-          (_, results) => { 
-            resolve(results); 
+          (_, results) => {
+            resolve(results);
           },
-          (txObj, erroSql) => { 
+          (txObj, erroSql) => {
             const erroReal = erroSql || txObj;
-            reject(erroReal); 
-            return true; 
+            reject(erroReal);
+            return true;
           }
         );
       },
@@ -93,7 +97,7 @@ export const atualizarAluno = (id, aluno) => {
         [
           aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
           aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
-          aluno.lim_aulas, aluno.ativo, id 
+          aluno.lim_aulas, aluno.ativo, id
         ],
         (_, results) => { resolve(results); },
         (_, error) => { reject(error); }
@@ -179,7 +183,7 @@ export const registrarCheckin = (aluno_id) => {
   return new Promise((resolve, reject) => {
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset() * 60000;
-    const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' '); 
+    const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' ');
 
     db.transaction((tx) => {
       tx.executeSql(
@@ -187,6 +191,19 @@ export const registrarCheckin = (aluno_id) => {
         [aluno_id, dataHoraLocal],
         (_, results) => { resolve(results); },
         (_, error) => { reject(error); }
+      );
+    });
+  });
+};
+
+export const atualizarObservacaoAluno = (id, texto) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `UPDATE alunos SET observacao = ? WHERE id = ?`,
+        [texto, id],
+        (_, result) => resolve(result),
+        (_, err) => reject(err)
       );
     });
   });
