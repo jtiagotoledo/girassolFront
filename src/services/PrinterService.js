@@ -10,7 +10,6 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
     const nomeSeguro = nomeCompleto || "Aluno";
     const nomeCurto = nomeSeguro.split(' ').slice(0, 2).join(' ');
 
-    // Detecta se é erro/bloqueio pela string enviada no checkin
     const infoStr = String(infoPrincipal);
     const isErro = infoStr.includes("PAGTO:") || infoStr === "ERRO";
 
@@ -30,40 +29,55 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       `[L]\n` +
       `[L].\n`;
 
-    // --- INÍCIO DO SISTEMA DE AUTO-RETRY ---
     let tentativas = 0;
-    let sucesso = false;
+    let conectou = false;
 
-    while (tentativas < 2 && !sucesso) {
+    // 1. Tenta estabelecer a conexão e imprimir a PRIMEIRA VIA
+    while (tentativas < 2 && !conectou) {
       try {
         tentativas++;
-        console.log(`Tentativa de impressão do ticket: ${tentativas}...`);
+        console.log(`Imprimindo VIA 1 (Tentativa ${tentativas})...`);
         
         await ThermalPrinterModule.printTcp({
-          ip: '192.168.0.200', 
+          ip: '192.168.15.200', 
           port: 9100,
-          timeout: 8000, // Tempo de espera estendido para 8 segundos
+          timeout: 8000, 
           payload: layoutRecibo,
           autoCut: true, 
         });
         
-        sucesso = true; 
-        console.log("✅ Ticket impresso com sucesso!");
+        conectou = true; 
+        console.log("✅ Primeira via impressa!");
 
       } catch (error) {
-        console.error(`❌ Falha na tentativa ${tentativas} (Rede/Timeout):`, error);
-        
-        if (tentativas >= 2) {
-          console.error("A impressora não respondeu após as tentativas.");
-          return false; 
-        }
-        
-        // Pausa de meio segundo para a rede "acordar" antes de tentar novamente
+        console.error(`❌ Falha na Via 1, tentativa ${tentativas}:`, error);
+        if (tentativas >= 2) return false; // Desiste se falhar 2 vezes
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
-    return sucesso;
+    // 2. Imprime a SEGUNDA VIA (Agora que a rede já está acordada!)
+    if (conectou) {
+      try {
+        // Uma pausa minúscula (1 segundo) para a impressora cortar o papel da Via 1
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log(`Imprimindo VIA 2...`);
+        await ThermalPrinterModule.printTcp({
+          ip: '192.168.15.200', 
+          port: 9100,
+          timeout: 3000, // Timeout bem menor, pois a rede já está rápida
+          payload: layoutRecibo,
+          autoCut: true, 
+        });
+        console.log("✅ Segunda via impressa!");
+        
+      } catch (error) {
+        console.error("❌ Falha ao imprimir a segunda via:", error);
+      }
+    }
+
+    return conectou;
 
   } catch (error) {
     console.error("❌ Erro geral ao processar ticket:", error);
