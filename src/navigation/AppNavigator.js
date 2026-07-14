@@ -4,18 +4,19 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 
-import Colors from '../style/Colors'; 
+import Colors from '../constants/colors'; 
 
 import Checkin from '../screens/Checkin';
 import ListaAlunos from '../screens/ListaAlunos';
 import CadastroAluno from '../screens/CadastroAluno';
+import ImportadorDb from '../screens/ImportadorDb';
+import Configuracoes from '../screens/Configuracoes';
+import RelatorioDiario from '../screens/RelatorioDiario';
 
 const Drawer = createDrawerNavigator();
 
-// --- SENHA DE ACESSO AO MENU ---
-const SENHA_ADMIN = '2503'; // Você pode alterar essa senha!
+const SENHA_ADMIN = '2503'; 
 
-// Componente do Botão de Menu
 const MenuButton = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
@@ -43,7 +44,7 @@ const MenuButton = () => {
         onPress={() => setModalVisible(true)} 
         style={styles.menuButton}
       >
-        <Icon name="menu" size={30} color={Colors.secondary} />
+        <Icon name="menu" size={30} color={Colors.textPrimary} />
       </TouchableOpacity>
 
       <Modal
@@ -91,22 +92,26 @@ const AppNavigator = () => {
         initialRouteName="Checkin"
         screenOptions={{
           swipeEnabled: false, 
-          
           drawerStyle: {
             backgroundColor: Colors.surface, 
-            width: 240,
+            width: 320, 
           },
           headerShown: true, 
-          headerTitle: 'Girassol Pilates',
-          headerTintColor: Colors.secondary,
+          headerTitle: 'Espaço Leviare',
+          headerTintColor: Colors.textPrimary,
           headerStyle: {
             backgroundColor: Colors.surface,
+          },
+          
+          drawerLabelStyle: {
+            fontSize: 22,      
+            fontWeight: 'bold',
+            marginVertical: 5,
           },
           
           drawerActiveTintColor: Colors.secondary, 
           drawerActiveBackgroundColor: Colors.primary, 
           drawerInactiveTintColor: Colors.textLight, 
-          
           headerLeft: MenuButton, 
         }}
       >
@@ -120,10 +125,47 @@ const AppNavigator = () => {
           component={ListaAlunos} 
           options={{ title: 'Gestão de Alunos' }}
         />
+
+        {/* --- NOVA TELA DO RELATÓRIO --- */}
+        <Drawer.Screen 
+          name="Relatorio" 
+          component={RelatorioDiario} 
+          options={{ title: 'Relatório Diário' }}
+        />
+        
         <Drawer.Screen 
           name="Cadastro" 
           component={CadastroAluno} 
-          options={{ title: 'Cadastrar Novo' }}
+          options={{ title: 'Cadastrar Aluno' }}
+        />
+
+        {/* --- NOVA TELA DE CONFIGURAÇÕES ISOLADA --- */}
+        <Drawer.Screen 
+          name="Configuracoes" 
+          component={Configuracoes} 
+          options={{ 
+            title: 'Configurações',
+            drawerItemStyle: { 
+              marginTop: 100, // Espaço em branco para separar das funções diárias
+              borderTopWidth: 1,        
+              borderTopColor: Colors.border, 
+              paddingTop: 10
+            }
+          }}
+        />
+
+        {/* --- IMPORTADOR --- */}
+        <Drawer.Screen 
+          name="Importador" 
+          component={ImportadorDb} 
+          options={{ 
+            title: 'Importar Alunos',
+            drawerLabelStyle: {
+              fontSize: 18,            
+              fontWeight: '600',
+              color: '#FF3B30' // Texto vermelho para destacar alerta
+            }
+          }}
         />
       </Drawer.Navigator>
     </NavigationContainer>
@@ -203,7 +245,7 @@ const styles = StyleSheet.create({
   btnTextConfirmar: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: Colors.secondary, // Usando o bege/creme da Leviare para contraste perfeito com o verde escuro!
+    color: Colors.secondary,
   }
 });
 

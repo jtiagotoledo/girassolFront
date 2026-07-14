@@ -4,21 +4,14 @@ import {
   EVOLUTION_INSTANCE_NAME 
 } from '@env'; 
 
-/**
- * Envia mensagem de texto via WhatsApp
- * @param {string} number - Número no formato 5515999999999
- * @param {string} message - Conteúdo da mensagem
- */
 export const enviarMensagemWhatsapp = async (number, message) => {
   try {
-    console.log('EVOLUTION_API_KEY',EVOLUTION_API_KEY);
     
     let formattedNumber = number.replace(/\D/g, '');
     
     if (!formattedNumber.startsWith('55')) {
         formattedNumber = `55${formattedNumber}`;
     }
-    console.log(formattedNumber,message);
     
     const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`, {
       method: 'POST',
@@ -34,9 +27,7 @@ export const enviarMensagemWhatsapp = async (number, message) => {
       })
     });
 
-
     const data = await response.json();
-    console.log(data);
     
     return data;
   } catch (error) {

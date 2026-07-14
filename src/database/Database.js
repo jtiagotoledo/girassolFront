@@ -1,19 +1,14 @@
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase(
-  { name: 'girassol_pilates.db', location: 'default' },
-  () => { console.log('Banco de dados conectado!'); },
-  error => { console.log('Erro ao conectar: ', error); }
+  { name: 'girassol_pilates.db', location: 'default' }
 );
 
 export const setupDatabase = () => {
-  // 1. LIGAR AS CHAVES ESTRANGEIRAS (Precisa rodar fora da transaction normal)
   db.executeSql('PRAGMA foreign_keys = ON;', [], () => {
-    console.log('Chaves Estrangeiras (Cascade) ATIVADAS!');
   });
 
   db.transaction((tx) => {
-    // Tabela de Alunos (Pai)
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS alunos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +29,6 @@ export const setupDatabase = () => {
       );`
     );
 
-    // Tabela de Check-ins (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS checkins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +38,6 @@ export const setupDatabase = () => {
       );`
     );
 
-    // Tabela de Pagamentos (Filha) - COM CASCADE
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS pagamentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,6 +47,10 @@ export const setupDatabase = () => {
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );`
     );
+    tx.executeSql("ALTER TABLE alunos ADD COLUMN observacao TEXT DEFAULT ''", [],
+      () => { console.log("Coluna observacao adicionada"); },
+      (tx, err) => {  }
+    );
   });
 };
 
@@ -62,34 +59,27 @@ export default db;
 export const cadastrarAluno = (aluno) => {
   return new Promise((resolve, reject) => {
     db.transaction(
-      // 1. Bloco de Execução
       (tx) => {
         tx.executeSql(
           `INSERT INTO alunos (
             nome, cpf, data_nasc, email, celular, logradouro, numero, complemento, bairro, cidade, uf, cep, lim_aulas, ativo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
             aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
-            aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1 
+            aluno.lim_aulas, aluno.ativo !== undefined ? aluno.ativo : 1
           ],
-          // SUCESSO
-          (_, results) => { 
-            resolve(results); 
+          (_, results) => {
+            resolve(results);
           },
-          // ERRO NA QUERY
-          (txObj, erroSql) => { 
-            // Algumas versões passam o erro no txObj, outras no erroSql. Vamos capturar os dois!
+          (txObj, erroSql) => {
             const erroReal = erroSql || txObj;
-            console.log("❌ Erro capturado no executeSql:", erroReal);
-            reject(erroReal); 
-            return true; // Cancela a transação
+            reject(erroReal);
+            return true;
           }
         );
       },
-      // 2. Erro na Transação (Fallback de segurança)
       (erroTransacao) => {
-        console.log("❌ Erro capturado na Transação:", erroTransacao);
         if (erroTransacao) reject(erroTransacao);
       }
     );
@@ -107,7 +97,7 @@ export const atualizarAluno = (id, aluno) => {
         [
           aluno.nome, aluno.cpf, aluno.data_nasc, aluno.email, aluno.celular, aluno.logradouro,
           aluno.numero, aluno.complemento, aluno.bairro, aluno.cidade, aluno.uf, aluno.cep,
-          aluno.lim_aulas, aluno.ativo, id 
+          aluno.lim_aulas, aluno.ativo, id
         ],
         (_, results) => { resolve(results); },
         (_, error) => { reject(error); }
@@ -116,16 +106,13 @@ export const atualizarAluno = (id, aluno) => {
   });
 };
 
-// 2. FUNÇÃO DE DELETAR LIMPA (O Banco faz o resto)
 export const deletarAluno = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
-      // Basta deletar o aluno. O 'ON DELETE CASCADE' vai apagar os checkins e pagamentos dele sozinho!
       tx.executeSql(
         'DELETE FROM alunos WHERE id = ?',
         [id],
         (_, results) => {
-          console.log("Aluno e todo o seu histórico deletados com sucesso via CASCADE.");
           resolve(results);
         },
         (_, error) => { reject(error); }
@@ -133,10 +120,6 @@ export const deletarAluno = (id) => {
     });
   });
 };
-
-// ==========================================
-// --- FUNÇÕES FINANCEIRAS ---
-// ==========================================
 
 export const registrarPagamento = (aluno_id, data_pagamento, valor = 0) => {
   return new Promise((resolve, reject) => {
@@ -170,7 +153,6 @@ export const buscarHistoricoPagamentos = (aluno_id) => {
   });
 };
 
-// Excluir um pagamento específico
 export const deletarPagamento = (id) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
@@ -184,7 +166,6 @@ export const deletarPagamento = (id) => {
   });
 };
 
-// Editar um pagamento existente
 export const atualizarPagamento = (id, data, valor) => {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
@@ -202,13 +183,49 @@ export const registrarCheckin = (aluno_id) => {
   return new Promise((resolve, reject) => {
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset() * 60000;
-    const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' '); 
+    const dataHoraLocal = (new Date(hoje - offset)).toISOString().slice(0, 19).replace('T', ' ');
 
     db.transaction((tx) => {
       tx.executeSql(
         'INSERT INTO checkins (aluno_id, data_hora) VALUES (?, ?)',
         [aluno_id, dataHoraLocal],
         (_, results) => { resolve(results); },
+        (_, error) => { reject(error); }
+      );
+    });
+  });
+};
+
+export const atualizarObservacaoAluno = (id, texto) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `UPDATE alunos SET observacao = ? WHERE id = ?`,
+        [texto, id],
+        (_, result) => resolve(result),
+        (_, err) => reject(err)
+      );
+    });
+  });
+};
+
+export const buscarCheckinsPorData = (dataBase) => {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `SELECT c.id, c.data_hora, a.nome
+         FROM checkins c
+         INNER JOIN alunos a ON c.aluno_id = a.id
+         WHERE c.data_hora LIKE ?
+         ORDER BY c.data_hora ASC`,
+        [`${dataBase}%`],
+        (_, results) => {
+          let lista = [];
+          for (let i = 0; i < results.rows.length; i++) {
+            lista.push(results.rows.item(i));
+          }
+          resolve(lista);
+        },
         (_, error) => { reject(error); }
       );
     });
