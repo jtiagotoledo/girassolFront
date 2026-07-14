@@ -1,4 +1,3 @@
-// src/services/PrinterService.js
 import ThermalPrinterModule from 'react-native-thermal-printer';
 
 export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdicional) => {
@@ -10,7 +9,6 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
     const nomeSeguro = nomeCompleto || "Aluno";
     const nomeCurto = nomeSeguro.split(' ').slice(0, 2).join(' ');
 
-    // Detecta se é erro/bloqueio pela string enviada no checkin
     const infoStr = String(infoPrincipal);
     const isErro = infoStr.includes("PAGTO:") || infoStr === "ERRO";
 
@@ -21,13 +19,8 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       `[L]\n` +
       `[L]Aluno(a): ${nomeCurto}\n` +
       `[L]Data: ${dataFormatada} as ${horaFormatada}\n` +
-      
-      // Linha de Aula ou Info de Erro
       `[L]${isErro ? infoStr : 'Aula: ' + infoStr}\n` +
-      
-      // Linha Adicional: Mostra Motivo (se erro) ou Último Pagamento (se sucesso)
       `[L]${isErro ? '<b>Motivo: ' + dadoAdicional + '</b>' : 'Ult. Pagamento: ' + dadoAdicional}\n` +
-      
       `\n` +
       `[C]--------------------------------\n` +
       `[L]\n` +
@@ -35,19 +28,41 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
       `[L]\n` +
       `[L].\n`;
 
-    await ThermalPrinterModule.printTcp({
-      ip: '192.168.15.200', 
-      port: 9100,
-      timeout: 5000,
-      payload: layoutRecibo,
-      autoCut: true, 
-    });
+    let tentativas = 0;
+    let sucesso = false;
 
-    console.log("✅ Ticket impresso com data de pagamento!");
-    return true;
+    while (tentativas < 2 && !sucesso) {
+      try {
+        tentativas++;
+        console.log(`Tentativa de impressão do ticket: ${tentativas}...`);
+        
+        await ThermalPrinterModule.printTcp({
+          ip: '192.168.15.200', 
+          port: 9100,
+          timeout: 8000, 
+          payload: layoutRecibo,
+          autoCut: true, 
+        });
+        
+        sucesso = true; 
+        console.log("✅ Ticket impresso com sucesso!");
+
+      } catch (error) {
+        console.error(`❌ Falha na tentativa ${tentativas} (Rede/Timeout):`, error);
+        
+        if (tentativas >= 2) {
+          console.error("A impressora não respondeu após as tentativas.");
+          return false; 
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    return sucesso;
 
   } catch (error) {
-    console.error("❌ Erro ao imprimir ticket:", error);
+    console.error("❌ Erro geral ao processar ticket:", error);
     return false;
   }
 };
