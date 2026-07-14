@@ -39,7 +39,7 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
         console.log(`Imprimindo VIA 1 (Tentativa ${tentativas})...`);
         
         await ThermalPrinterModule.printTcp({
-          ip: '192.168.15.200', 
+          ip: '192.168.0.200', 
           port: 9100,
           timeout: 8000, 
           payload: layoutRecibo,
@@ -64,7 +64,7 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
         
         console.log(`Imprimindo VIA 2...`);
         await ThermalPrinterModule.printTcp({
-          ip: '192.168.15.200', 
+          ip: '192.168.0.200', 
           port: 9100,
           timeout: 3000, // Timeout bem menor, pois a rede já está rápida
           payload: layoutRecibo,
