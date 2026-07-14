@@ -92,7 +92,7 @@ export const imprimirRelatorioDiario = async (dataFormatada, listaCheckins, tota
     await ThermalPrinterModule.printTcp({
       ip: '192.168.0.200', 
       port: 9100,
-      timeout: 5000,
+      timeout: 10000,
       payload: layoutRelatorio,
       autoCut: true, 
     });
