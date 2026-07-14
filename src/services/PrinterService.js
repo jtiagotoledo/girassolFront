@@ -40,7 +40,7 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
         console.log(`Tentativa de impressão do ticket: ${tentativas}...`);
         
         await ThermalPrinterModule.printTcp({
-          ip: '192.168.15.200', 
+          ip: '192.168.0.200', 
           port: 9100,
           timeout: 8000, // Tempo de espera estendido para 8 segundos
           payload: layoutRecibo,
