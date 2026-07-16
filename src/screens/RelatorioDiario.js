@@ -47,14 +47,21 @@ const RelatorioDiario = ({ navigation }) => {
 
   const mandarImprimir = async () => {
     setCarregando(true);
-    const dataTela = formatarDataTela(dataAtual);
-    const sucesso = await imprimirRelatorioDiario(dataTela, checkins, checkins.length);
     
-    setCarregando(false);
-    if (sucesso) {
-      Alert.alert("Sucesso", "Relatório enviado para a impressora!");
-    } else {
-      Alert.alert("Erro", "Falha ao comunicar com a impressora.");
+    try {
+      const dataTela = formatarDataTela(dataAtual);
+      const sucesso = await imprimirRelatorioDiario(dataTela, checkins, checkins.length);
+      
+      if (sucesso) {
+        Alert.alert("Sucesso", "Relatório enviado para a impressora!");
+      } else {
+        Alert.alert("Erro", "Falha ao comunicar com a impressora.");
+      }
+    } catch (error) {
+      console.error("Erro interno na tela de relatório:", error);
+      Alert.alert("Erro Crítico", "Ocorreu um problema ao gerar o relatório.");
+    } finally {
+      setCarregando(false);
     }
   };
 

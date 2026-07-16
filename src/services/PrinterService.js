@@ -83,3 +83,46 @@ export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdi
     return false;
   }
 };
+
+export const imprimirRelatorioDiario = async (dataTela, checkins, total) => {
+  try {
+    console.log("Gerando layout do relatório...");
+    
+    let layout = `[C]<b>ESPAÇO LEVIARE</b>\n`;
+    layout += `[C]--------------------------------\n`;
+    layout += `[C]<b>RELATORIO DIARIO</b>\n`;
+    layout += `[L]Data: ${dataTela}\n`;
+    layout += `[L]Total de Acessos: ${total}\n`;
+    layout += `[C]--------------------------------\n`;
+    layout += `[L]HORA  | NOME DO ALUNO\n`;
+    layout += `[C]--------------------------------\n`;
+
+    if (checkins && checkins.length > 0) {
+      checkins.forEach(item => {
+        const hora = item.data_hora.split(' ')[1].substring(0, 5); 
+        const nomeCurto = item.nome.substring(0, 24); 
+        layout += `[L]${hora} | ${nomeCurto}\n`;
+      });
+    } else {
+      layout += `[C]Nenhum acesso registrado.\n`;
+    }
+
+    layout += `\n[C]--------------------------------\n`;
+    layout += `[L]\n[L]\n[L]\n[L].\n`;
+
+    await ThermalPrinterModule.printTcp({
+      ip: '192.168.0.200', 
+      port: 9100,
+      timeout: 8000, 
+      payload: layout,
+      autoCut: true, 
+    });
+
+    console.log("✅ Relatório diário impresso!");
+    return true;
+
+  } catch (error) {
+    console.error("❌ Erro ao imprimir relatório:", error);
+    return false;
+  }
+};
