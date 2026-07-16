@@ -1,4 +1,3 @@
-// src/services/PrinterService.js
 import ThermalPrinterModule from 'react-native-thermal-printer';
 
 export const imprimirTicketCheckin = async (nomeCompleto, infoPrincipal, dadoAdicional) => {
