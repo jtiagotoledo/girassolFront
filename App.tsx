@@ -11,16 +11,29 @@ const App = () => {
     setupDatabase();
 
     const pingRoteador = async () => {
+      const controller = new AbortController();
+      
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 5000);
+
       try {
-        console.log(" Heartbeat GLOBAL: Mantendo a rota da impressora ativa...");
+        console.log("💓 Heartbeat: Disparando requisição...");
+        
         await fetch('http://192.168.0.200', { 
           method: 'HEAD',
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
-          }
+          },
+          signal: controller.signal 
         });
+        
+        clearTimeout(timeoutId);
+        console.log("✅ O pacote chegou! (A impressora respondeu)");
+
       } catch (error) {
+        console.log("⚠️ Executado e liberado pelo Android! (Timeout normal porque não achou a impressora).");
       }
     };
 
